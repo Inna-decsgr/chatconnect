@@ -3,7 +3,8 @@ import axios from 'axios';
 
 const store = createStore({
   state: {
-    user: {},
+    user: {},  // 현재 사용자
+    users: [],  // 모든 사용자 목록
     token: localStorage.getItem('access_token') || null,
   },
   mutations: {
@@ -19,13 +20,16 @@ const store = createStore({
       state.token = null;
       localStorage.removeItem('access_token');
     },
+    SET_FRIENDS(state, users) {
+      state.users = users
+    }
   },
   actions: {
+    // 로그인한 사용자 정보 가져오기
     async fetchUserData({ commit, state }) {
       if (!state.token) {
         return;
       }
-
       try {
         const response = await axios.get('http://localhost:5000/get_profile', {
           headers: {
@@ -38,6 +42,7 @@ const store = createStore({
         commit('CLEAR_AUTH_DATA');
       }
     },
+    // 로그인
     async login({ commit, dispatch }, credentials) {
       try {
         const response = await axios.post('http://localhost:5000/login', {
@@ -66,8 +71,18 @@ const store = createStore({
         throw error;
       }
     },
+    // 로그아웃
     logout({ commit }) {
       commit('CLEAR_AUTH_DATA');
+    },
+    // 모든 사용자 목록 가져오기
+    async getFriends({ commit }) {
+      try {
+        const response = await axios.get('http://localhost:5000/users');
+        commit('SET_FRIENDS', response.data);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
     }
   },
   getters: {
@@ -80,9 +95,9 @@ const store = createStore({
   }
 });
 
-export default store;
-
-
-if (store.state.token) {
+if (store.state.token) {  // 로그인 상태 유지하려고
   store.dispatch('fetchUserData');
 }
+
+
+export default store;
