@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # Virtual environment
 venv/
+
+# Compiled Python files
+*.pyc
+__pycache__/
