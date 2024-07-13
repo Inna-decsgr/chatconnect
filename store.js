@@ -1,5 +1,6 @@
 import { createStore } from 'vuex';
 import axios from 'axios';
+import createPersistedState from 'vuex-persistedstate';
 
 const store = createStore({
   state: {
@@ -92,7 +93,13 @@ const store = createStore({
     user(state) {
       return state.user;
     }
-  }
+  },
+  plugins: [  // user 상태를 저장하지 않아서 로그인한 상태로 chatlist에서 새로고침을 하면 / 경로로 돌아가는 오류를 막기위해서 createPersistedState를 사용해서 방지
+    createPersistedState({
+      key: 'myApp', // 저장할 키 이름
+      paths: ['user'], // 저장할 상태 경로
+    })
+  ],
 });
 
 if (store.state.token) {  // 로그인 상태 유지하려고
