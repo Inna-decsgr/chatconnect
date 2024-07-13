@@ -1,8 +1,9 @@
 from flask import request, jsonify
 from python import app, db
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from python.models import User
+from python.models import User, Messages
 from python.__init__ import bcrypt
+from datetime import datetime
 
 
 # 사용자 등록 API
@@ -43,7 +44,8 @@ def get_profile():
 
     if user:
         return jsonify({
-            "username": user.username
+            "username": user.username,
+            "userid": user.user_id
         }), 200
     
     return jsonify({"msg": "User not found!"}), 404
@@ -60,3 +62,48 @@ def get_users():
     except Exception as e:
         print(f"Error fetching users: {e}")
         return jsonify({'message': 'Failed to fetch users'}), 500  # 에러 코드 수정
+    
+
+messages = []
+
+# 메세지 보내기
+@app.route('/messages', methods=['POST'])
+def add_message():
+    try :
+        data = request.json
+        chat_id = data['chat_id']
+        sender_id = data['sender_id']
+        sender_name = data['sender_name']
+        receiver_id = data['receiver_id']
+        receiver_name = data['receiver_name']
+        text = data['text']
+        created_at = datetime.now()
+
+        new_message = Messages(
+            chat_id= chat_id,
+            sender_id= sender_id,
+            sender_name= sender_name,
+            receiver_id= receiver_id,
+            receiver_name = receiver_name,
+            text= text,
+            created_at= created_at
+        )
+        db.session.add(new_message)
+        db.session.commit()
+
+        return jsonify(new_message.to_dict()), 201
+    
+    except Exception as e:
+        print(f"Error adding message: {e}")
+        return jsonify({'message': 'Failed to add message'}), 500
+    
+
+# 메시지 읽어오기
+@app.route('/messages/<chat_id>', methods=['GET'])
+def get_message(chat_id):
+    try:
+        messages = Messages.query.filter_by(chat_id=chat_id).order_by(Messages.created_at).all()
+        return jsonify([msg.to_dict() for msg in messages]), 200
+    except Exception as e:
+        print(f"Error fetching messages: {e}")
+        return jsonify({'message:' 'Failed to fetch messages'}), 500
