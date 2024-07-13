@@ -1,8 +1,8 @@
 <template>
   <div>
     <h2>회원가입</h2>
-    <input v-model="username" placeholder="Username" /><br/>
-    <input type="password" v-model="password" placeholder="Password" /><br/>
+    <input v-model="username" placeholder="Username" required @keydown.enter="register"/><br/>
+    <input type="password" v-model="password" placeholder="Password" required @keydown.enter="register"/><br/>
     <button @click="register">회원가입</button>
   </div>
 </template>
