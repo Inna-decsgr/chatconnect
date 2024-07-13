@@ -10,7 +10,7 @@ load_dotenv()  # .env 파일 로드해서 환경 변수 사용할 수 있도록 
 
 
 app = Flask(__name__)   # Flask 어플리케이션 인스턴스 생성
-CORS(app)  # 모든 경로에 대해 CORS를 허용
+CORS(app, resources={r"/*": {"origins": "*"}})  # 모든 경로와 모든 출처 허용
 
 # 데이터베이스 URL 설정(MYSQL 연결)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mariadb@localhost/chat'
