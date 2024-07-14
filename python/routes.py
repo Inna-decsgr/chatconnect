@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, render_template
 from python import app, db
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from python.models import User, Messages
@@ -107,3 +107,4 @@ def get_message(chat_id):
     except Exception as e:
         print(f"Error fetching messages: {e}")
         return jsonify({'message:' 'Failed to fetch messages'}), 500
+

@@ -20,5 +20,3 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  # 비밀 키 설정
 db = SQLAlchemy(app) # SQLAlchemy 데이터베이스 객체 생성
 bcrypt = Bcrypt(app)  # Bcrypt 객체 생성(비밀번호 해시용)
 jwt = JWTManager(app) # JWT 관리 객체 생성
-
-from python import routes  # routes를 import하여 라우트를 등록
