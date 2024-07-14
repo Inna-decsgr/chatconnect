@@ -1,5 +1,4 @@
 <template>
-  <p v-if="user">나: {{ user.username }}</p>
   <FriendsList />
 </template>
 
