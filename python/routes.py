@@ -1,17 +1,21 @@
-from flask import request, jsonify, render_template
+from flask import request, jsonify
 from python import app, db
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from python.models import User, Messages
 from python.__init__ import bcrypt
 from datetime import datetime
 
-
 # 사용자 등록 API
 @app.route('/register', methods=['POST'])
 def register():
     username = request.json.get('username')  # 요청에서 사용자 이름 가져오기
     password = request.json.get('password')  # 요청에서 비밀번호 가져오기
-    
+
+    # 사용자 이름 중복 확인
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"msg:" "이미 사용중인 아이디입니다."}), 400
+
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')  # 비밀번호 해시 처리
     
     new_user = User(username=username, password=hashed_password)  # 새로운 사용자 객체 생성
