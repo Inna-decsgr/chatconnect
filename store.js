@@ -4,8 +4,8 @@ import createPersistedState from 'vuex-persistedstate';
 
 const store = createStore({
   state: {
-    user: {},  // 현재 사용자
-    users: [],  // 모든 사용자 목록
+    user: {},   
+    users: [],  
     token: localStorage.getItem('access_token') || null,
   },
   mutations: {
@@ -26,7 +26,6 @@ const store = createStore({
     }
   },
   actions: {
-    // 로그인한 사용자 정보 가져오기
     async fetchUserData({ commit, state }) {
       if (!state.token) {
         return;
@@ -43,7 +42,6 @@ const store = createStore({
         commit('CLEAR_AUTH_DATA');
       }
     },
-    // 로그인
     async login({ commit, dispatch }, credentials) {
       try {
         const response = await axios.post('http://localhost:5000/login', {
@@ -61,9 +59,6 @@ const store = createStore({
         commit('SET_USER', response.data.user);
         commit('SET_TOKEN', accessToken);
 
-        console.log(accessToken);
-
-        // 로그인 끝나면 fetchUserData 실행
         await dispatch('fetchUserData');
         
         return response.data;
@@ -72,11 +67,9 @@ const store = createStore({
         throw error;
       }
     },
-    // 로그아웃
     logout({ commit }) {
       commit('CLEAR_AUTH_DATA');
     },
-    // 모든 사용자 목록 가져오기
     async getFriends({ commit }) {
       try {
         const response = await axios.get('http://localhost:5000/users');
@@ -94,15 +87,15 @@ const store = createStore({
       return state.user;
     }
   },
-  plugins: [  // user 상태를 저장하지 않아서 로그인한 상태로 chatlist에서 새로고침을 하면 / 경로로 돌아가는 오류를 막기위해서 createPersistedState를 사용해서 방지
+  plugins: [  
     createPersistedState({
-      key: 'myApp', // 저장할 키 이름
-      paths: ['user'], // 저장할 상태 경로
+      key: 'myApp', 
+      paths: ['user'], 
     })
   ],
 });
 
-if (store.state.token) {  // 로그인 상태 유지하려고
+if (store.state.token) {  
   store.dispatch('fetchUserData');
 }
 

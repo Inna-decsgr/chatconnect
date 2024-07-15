@@ -14,13 +14,12 @@
 import { mapState } from 'vuex'
 export default {
   computed: {
-    ...mapState(['users', 'user']),  // 전체 사용자들을 users에 저장, mapState를 사용하면 store의 users를 가져올수있음
+    ...mapState(['users', 'user']),   
     filteredUsers() {
       return this.users.filter(user => user.username !== this.user.username);
     }
   },
   mounted() {
-    // 사용자 목록을 가져오는 액션 호출
     this.$store.dispatch('getFriends')
   },
   methods: {

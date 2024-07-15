@@ -22,7 +22,6 @@ export default {
         const response = await this.$store.dispatch('login', credentials);
         alert('로그인 성공')
         console.log(response);
-        //alert('로그인 성공! Access Token: ' + response.access_token || response.token);
         this.$router.push('/mainchat/chatlist');
       } catch (error) {
         console.error(error);

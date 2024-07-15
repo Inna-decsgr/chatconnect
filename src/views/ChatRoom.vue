@@ -8,8 +8,8 @@ import ChattingRoom from '../components/ChattingRoom.vue'
 
 export default {
   computed: {
-    ...mapState(['user']),   // user는 현재 로그인한 사용자
-    friendId() {  // friendId는 채팅하기를 클릭해서 채팅할 상대
+    ...mapState(['user']),   
+    friendId() {  
       return this.$route.query.id
     },
     friendName() {
