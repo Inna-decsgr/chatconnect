@@ -132,7 +132,7 @@ export default {
 
 <style>
 .chat-container {
-  max-height: 500px;
+  height: 500px;
   overflow-y: auto;
   background: rgb(242, 244, 252);
   padding: 10px;
