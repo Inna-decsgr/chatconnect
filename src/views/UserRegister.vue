@@ -36,7 +36,7 @@ export default {
         this.$router.push('/mainchat/chatlist');
       } catch (error) {
         console.error(error.response ? error.response.data : error);
-        alert('회원가입 실패');
+        alert('이미 등록된 사용자입니다. 로그인 해주세요.');
       }
     },
   },
