@@ -66,10 +66,79 @@ ChattConnect는 사용자들이 친구들과 간편하게 채팅할 수 있는 �
     
 
 ### 문제 해결
+채팅 어플리케이션을 구현하면서 발생한 문제들과 이를 해결하기 위해 한 방법들을 기술해보려고 한다.
+* **문제 1: 로그인 유지가 되지 않음**
+
+🫁 **문제 설명**: 사용자가 로그인이나 회원가입을 성공적으로 마친 후 다른 기능을 이용하다가 새로고침을 하면 로그인이 풀려 사용자가 로그아웃 상태가 되는 문제가 발생했다. 이로 인해 사용자는 로그인 상태를 지속적으로 유지할 수 없었다.  
+🫁 **해결 방법**: 사용자가 로그인을 하면 사용자 정보를 localStorage에 저장하고, 새로고침 시 저장된 사용자 상태를 가져와 로그인 상태가 유지되도록 했다.  
+
+(1) 상태 저장: `vuex-persistedstate` 플러그인을 사용하여 Vuex 상태가 변경될 때마다 자동으로 사용자 상태를 localStorage에 저장한다.  
+store.js 파일에 플러그인을 추가하고 설정을 아래와 같이 수정했다.
+```js
+import createPersistedState from 'vuex-persistedstate';
+
+export const store = new Vuex.Store({
+  plugins: [ 
+    createPersistedState({
+      key: 'myApp', 
+      paths: ['user'], 
+    })
+  ]
+});
+```
+
+(2) 상태 복구:  애플리케이션이 로드될 때, localStorage에 저장된 토큰을 확인하고 사용자 데이터를 가져온다. store가 초기화될 때, localStorage 저장된 token이 있는지 확인한다. 사용자가 로그인할 때 SET_TOKEN 뮤테이션에서 `localStorage.setItem('access_token', token);` 토큰을 localstorage에 저장해뒀으니 로그인이 되었다면 아마 로컬 스토리지에 토큰이 저장되어있을 것이다.  토큰이 있으면 `fetchUserData()` 액션을 사용해서 사용자 데이터를 가져온다. 이렇게 하면 새로고침 후에도 사용자가 로귿인을 유지할 수 있다.
+```js
+if (store.state.token) {  
+  store.dispatch('fetchUserData');
+}
+```
+
+* **문제 2: SQLAlchemy 데이터베이스 오류**
+
+🫁 **문제(1) 설명**: 애플리케이션을 실행할 때 콘솔에 다음과 같은 오류 메시지가 출력되었다. 
+```
+Error adding message: Class 'builtins.dict' is not mapped
+```
+테이블 이름을 Messages로 정의해두고 메시지를 추가할 때는 Message에 추가해 발생한 문제였다.  
+🫁 **해결 방법**: 테이블 이름을 Messages로 일치시켰다.  
+
+🫁 **문제(2) 설명**: 테이블 이름을 일치시키고 다시 실행하니 아래와 같은 에러가 발생했다.
+```
+Error adding message: (pymysql.err.ProgrammingError) (1146, "Table 'chat.message' doesn't exist")
+```
+tablename 속성 값이 실제 데이터베이스 테이블 이름과 달라서 발생한 문제였다.  
+🫁 **해결 방법**: tablename 속성이 데이터베이스와 일치하지 않아서 Message를 Messages로 수정하고, Chats 테이블의 이름도 Chats로 수정했다. 그리고 `db.create_all()`을 run.py에 추가하여 어플리케이션이 실행되기 전에 테이블을 생성했다.  
+
+🫁 **문제(3) 설명**: 테이블이 생성되도록 직접 코드를 추가하고 다시 실행해보니 이번엔 다른 에러가 발생했다.
+```
+Error adding message: (pymysql.err.DataError) (1265, "Data truncated for column 'chat_id' at row 1")
+```
+`Data truncated for column 'chat_id' at row 1` chat_id에 삽입하려는 데이터의 크기가 해당 열의 정의보다 커서 발생하는 에러이다. 데이터베이스 설계할 때 chat_id는 INT 타입으로 해두었는데 uuid로 chat_id를 생성하면서 chat_id가 길어져서 데이터 타입에 맞지 않게 된 것이다.  
+🫁 **해결 방법**: 데이터 타입을 바꾸려고 하니 참조 관계 때문에 바꿀수가 없어서 우선 제약 조건을 모두 제거한 후에 참조하는 테이블과 참조되는 테이블의 chat_id 데이터 타입을 모두 VARCHAR(36)으로 변경해주었다.  
+1 - 외래 키 참조 끊기
+```
+ALTER TABLE Messages DROP FOREIGN KEY Messages_Users_FK;
+ALTER TABLE Messages DROP FOREIGN KEY Messages_Users_FK_1;
+```
+2 - 데이터 타입 변경
+```
+ALTER TABLE Messages MODIFY chat_id VARCHAR(36);
+ALTER TABLE Chats MODIFY chat_id VARCHAR(36);
+```
+3 - 다시 관계 설정  
+DBeaver로 다시 외래키 설정을 해줬더니 더 이상 에러가 발생하지 않고 정상적으로 작동하였고 실제로 메세지도 잘 전송되었다.
+
+블로그에 문제 해결 과정을 더 자세히 작성해두었다.  
+https://velog.io/@kimina/Vue.js%EB%A1%9C-%EC%B1%84%ED%8C%85-%EC%96%B4%ED%94%8C%EB%A6%AC%EC%BC%80%EC%9D%B4%EC%85%98-%EB%A7%8C%EB%93%A4%EA%B8%B0-%EC%8B%A4%EC%8B%9C%EA%B0%84-%EB%A9%94%EC%84%B8%EC%A7%80-%EC%A3%BC%EA%B3%A0-%EB%B0%9B%EA%B8%B01
 
 
 #### 결론
+이번 채팅 어플리케이션 개발 과정에서 발생한 여러 문제를 통해 많은 것을 배울 수 있었다. 첫 번째 문제인 로그인 유지 문제는 사용자 경험에 직결되는 중요한 부분이었는데, `vuex-persistedstate` 플러그인을 활용해서 상태를 localStorage에 저장하고, 이를 통해 새로고침 후에도 로그인 상태를 유지되게 할 수 있었다. 이를 통해 향상된 사용자 경험을 제공할 수 있었고, 클라이언트 측 상태 관리의 중요성을 다시 한 번 깨닫게 되었다.
 
+두 번째 문제인 SQLAlchemy 데이터베이스 오류를 해결하는 과정에서 데이터베이스 설계와 구현 간의 일치를 확인하는 것이 얼마나 중요한지를 알게되었다. 여러 번의 오류를 겪으며, 테이블 이름과 데이터 타입을 정확히 맞추는 과정에서 SQLAlchemy의 모델 정의와 실제 데이터베이스 간의 관계를 더 확실하게 이해하게 되었다. 특히 외래 키 제약 조건을 수정하고 데이터 타입을 변경하는 과정에서 데이터베이스의 구조를 잘 알고 활용해야겠다는 다짐을 하게 되었다.
+
+이번 프로젝트를 진행하면서 겪은 오류와 이 오류를 해결하는 과정을 통해 후에 다른 프로젝트에서 비슷한 문제를 겪게 된다면 더 효율적으로 해결할 수 있을 것 같다는 생각을 했다. 앞으로는 데이터베이스 설계를 할 때 각 데이터 타입과 제약 조건을 신중하게 고려하고, 클라이언트 측의 상태 관리를 적절히 활용해서 사용자에게 더 나은 경험을 제공할 수 있도록 노력할 것이다.
 
 ### 사용 방법
 🥲 백엔드 서버 실행  
