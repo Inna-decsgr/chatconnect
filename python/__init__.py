@@ -13,7 +13,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mariadb@localhost/chat'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mysqlnote@localhost/chat'
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY') 
 
 db = SQLAlchemy(app) 
