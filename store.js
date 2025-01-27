@@ -4,13 +4,20 @@ import createPersistedState from 'vuex-persistedstate';
 
 const store = createStore({
   state: {
+    me: {},
     user: {},   
     users: [],  
     token: localStorage.getItem('access_token') || null,
   },
   mutations: {
     SET_USER(state, user) {
-      state.user = user;
+      console.log('SET_USER 호출됨:', state.user);
+      // ... 스프레드 연산자 사용하면 객체를 병합하면서 중복된 키는 새로운 객체의 값으로 덮어씌움
+      state.user = {
+        ...state.user, // 기존 데이터를 유지
+        ...user,       // 새로운 데이터로 덮어쓰기
+      };
+      state.me = user;
     },
     SET_TOKEN(state, token) {
       state.token = token;
@@ -23,6 +30,9 @@ const store = createStore({
     },
     SET_FRIENDS(state, users) {
       state.users = users
+    },
+    setProfileMessage(state, message) {
+      state.user.profile_message = message;
     }
   },
   actions: {
@@ -42,21 +52,20 @@ const store = createStore({
         commit('CLEAR_AUTH_DATA');
       }
     },
-    async login({ commit, dispatch }, credentials) {
-      try {
+    async login({ commit, dispatch }, userdata) {
+      try {        
         const response = await axios.post('http://localhost:5000/login', {
-          username: credentials.username,
-          password: credentials.password,
+          id: userdata.id,
+          password: userdata.password,
         });
 
-        console.log('로그인 응답 정보', response.data);
+        console.log('로그인 응답 정보', response.data.user);
+        commit('SET_USER', response.data.user);
 
         const accessToken = response.data.access_token || response.data.token;
         if (!accessToken) {
           throw new Error('No access token found in login response');
         }
-        
-        commit('SET_USER', response.data.user);
         commit('SET_TOKEN', accessToken);
 
         await dispatch('fetchUserData');
@@ -74,6 +83,7 @@ const store = createStore({
       try {
         const response = await axios.get('http://localhost:5000/users');
         commit('SET_FRIENDS', response.data);
+        console.log('친구들', response.data);
       } catch (error) {
         console.error('Failed to fetch users:', error);
       }
@@ -83,8 +93,11 @@ const store = createStore({
     isAuthenticated(state) {
       return !!state.token;
     },
-    user(state) {
+    getUser(state) {
       return state.user;
+    },
+    getMe(state) {
+      return state.me;
     }
   },
   plugins: [  
