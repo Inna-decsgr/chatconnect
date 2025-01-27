@@ -5,14 +5,24 @@ from datetime import datetime, timezone
 # User 모델 정의
 class User(db.Model):
     __tablename__ = 'Users'  # 테이블 이름
-    user_id = db.Column(db.Integer, primary_key=True)  # 사용자 ID(기본키)
-    username = db.Column(db.String(50), unique=True, nullable=False) # 사용자 이름(고유값, NULL 불가)
-    password = db.Column(db.String(255), nullable=False)  # 비밀번호 (NULL 불가)
+    user_id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    id = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    phonenumber = db.Column(db.String(20), unique=True, nullable=False)
+    profile_image = db.Column(db.String(255))
+    profile_message = db.Column(db.String(255))
 
     def to_dict(self):
         return {
             'user_id': self.user_id,
-            'username': self.username
+            'username': self.username,
+            'id': self.id,
+            'email': self.email,
+            'phonenumber': self.phonenumber,
+            'profile_image': self.profile_image,
+            'profile_message': self.profile_message
         }
     
 # Messages 모델 정의
@@ -26,6 +36,7 @@ class Messages(db.Model):
     receiver_name = db.Column(db.String(36), nullable=False)
     text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
         return {
@@ -35,7 +46,8 @@ class Messages(db.Model):
             'receiver_id': self.receiver_id,
             'receiver_name': self.receiver_name,
             'text': self.text,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat(),
+            'is_read': self.is_read
         }
     
 
@@ -45,12 +57,14 @@ class Chats(db.Model):
     chat_id = db.Column(db.String(36), primary_key=True)
     user1_id = db.Column(db.Integer, nullable=False)
     user2_id = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
             'chat_id': self.chat_id,
             'user1_id': self.user1_id,
             'user2_id': self.user2_id,
+            'created_at': self.created_at
         }
     
 
