@@ -1,5 +1,5 @@
 <template >
-  <div class="chat-container mt-4" ref="chatContainer">
+  <div class="chat-container p-3" ref="chatContainer">
     <div v-for="(msg, index) in messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
       <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
     8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
@@ -11,15 +11,29 @@
     미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
     같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
       <div class="message-container">
-        <p class="fw-bold" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
-        <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
-        <p class="time">{{ msg.created_at }}</p>
+        <div class="flex">
+          <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
+          <div class="pl-3">
+            <p class="text-sm" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
+            <div class="flex">
+              <p class="text-sm" :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
+              <p v-if="!msg.is_read" class="unread-indicator">1</p>
+              <p class="time">{{ msg.created_at }}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="input-group mt-2">
-    <input type="text" class="form-control form-control-lg" v-model="newMessage" placeholder="메시지 입력" @keyup.enter="sendmessage">
-    <button class="btn btn-primary" @click="sendmessage">전송</button>
+  <div class="flex bg-red-100">
+    <input 
+      type="text" 
+      class="basis-5/6 text-xs p-3" 
+      v-model="newMessage" 
+      placeholder="메시지 입력" 
+      @keyup.enter="sendmessage"
+    >
+    <button class="text-xs basis-1/6" @click="sendmessage">전송</button>
   </div>
 </template>
 
@@ -27,6 +41,7 @@
 import axios from 'axios'
 import { mapState } from 'vuex'
 import { v4 as uuidv4 } from 'uuid';
+import { formatDatetime } from '@/utils/formatDate';
 
 export default {
   data() {
@@ -37,7 +52,10 @@ export default {
     }
   },
   created() {
-    this.loadUserandMessages();  
+    this.loadUserandMessages();
+  },
+  mounted() {
+    this.loadUserandMessages();
   },
   updated() {
     this.scrollToBottom();
@@ -45,7 +63,7 @@ export default {
   computed: {
     ...mapState(['user'])
   },
-  props: {
+  props: { 
     friendId: {
       type: String,
       required: true
@@ -65,6 +83,8 @@ export default {
       } else {
         console.error('User is not defined or userid is missing');
       }
+
+      this.setIsReadTrue(this.chatId);
     },
     getChatId() {
       const ids = [this.user.userid, this.friendId].sort();
@@ -83,17 +103,12 @@ export default {
         this.messages = response.data.map(msg => {
           return {
             ...msg,
-            created_at: this.formatDatetime(msg.created_at)  
+            created_at: formatDatetime(msg.created_at)  
           };
         });
       } catch (error) {
         console.error('메시지 로드 실패:', error)
       }
-    },
-    formatDatetime(datetime) {  
-      const date = new Date(datetime);
-      const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-      return date.toLocaleString('ko-KR', options);
     },
     async sendmessage() {
       if (this.newMessage.trim()) {
@@ -107,12 +122,14 @@ export default {
           text: this.newMessage,
           timestamp
         };
+        console.log('메세지 정보', messages);
 
         try {
           const response = await axios.post('http://localhost:5000/messages', messages);
+          console.log('보낸 메시지', response.data);
           const formattedMessage = {  
             ...response.data,
-            created_at: this.formatDatetime(response.data.created_at)
+            created_at: formatDatetime(response.data.created_at)
           }
           this.messages.push(formattedMessage);
           this.newMessage = '';
@@ -129,6 +146,18 @@ export default {
       const container = this.$refs.chatContainer;
       if (container) {
         container.scrollTop = container.scrollHeight;
+      }
+    },
+    async setIsReadTrue(chatid) {
+      try {
+        // this.chatId랑 this.userid
+        //  {{ this.chatId }}{{ this.user.userid }}
+        const response = await axios.post(`http://localhost:5000/setisreadtrue/${chatid}`, {
+          userid: this.user.userid
+        });
+        console.log('is_read를 true로', response.data);
+      } catch (error) {
+        console.error('Error setting is_read:', error.response.data);
       }
     }
   }
@@ -150,6 +179,7 @@ export default {
 
 .sender-wrapper {
   align-items: flex-end; 
+  position: relative;
 }
 
 .receiver-wrapper {
@@ -160,6 +190,7 @@ export default {
   display: flex;
   flex-direction: column;
   max-width: 70%;
+  position: relative;
 }
 
 .message {
@@ -177,6 +208,25 @@ export default {
 .receiver {
   background-color: #d1e7ff; 
   align-self: flex-start; 
+}
+
+.sender-wrapper .time {
+  font-size: 12px;
+  color: darkgray;
+  align-self: flex-start; /*시간을 왼쪽에 정렬*/
+  position: absolute;
+  top: 50%; /* 말풍선 중앙에 위치 */
+  left: -50px; /* 말풍선 왼쪽으로 이동 */
+}
+
+/* 읽지 않은 메시지 (1)를 시간 위에 작은 크기로 표시 */
+.sender-wrapper .unread-indicator {
+  font-size: 10px;
+  color: orange;
+  font-weight: bold;
+  position: absolute;
+  top: 25%; /* 시간 위로 이동 */
+  left: 0; /* 말풍선 왼쪽으로 이동 */
 }
 
 .sender::after,
@@ -205,6 +255,7 @@ export default {
 
 .time {
   font-size: 12px;
+  margin-left: 7px;
   color: darkgray;
   align-self: flex-end; /* 시간을 오른쪽으로 정렬 */
 }
