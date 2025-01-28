@@ -1,10 +1,9 @@
 <template>
-  <div class="mt-4">
-    <p class="fs-6 text-secondary">👥 친구 {{ filteredUsers.length }}</p>
+  <div>
+    <p class="text-xs text-gray-500 font-bold py-3 px-4">친구 {{ filteredUsers.length }}</p>
     <ul class="d-flex flex-column">
-      <li v-for="(user, index) in filteredUsers" :key="index" class="d-flex justify-content-between align-items-center w-100 mb-3">
-        <span class="fs-5">{{ user.username }}</span>
-        <button class="btn btn-primary" @click="startchat(user)">채팅하기</button>
+      <li v-for="(user, index) in filteredUsers" :key="index" class="d-flex justify-content-between align-items-center w-100 hover:bg-gray-100" @dblclick="startchat(user)">
+        <UserCard :friends="user" />
       </li>
     </ul>
   </div>
@@ -12,7 +11,12 @@
 
 <script>
 import { mapState } from 'vuex'
+import UserCard from '../components/UserCard.vue'
+
 export default {
+  components: {
+    UserCard
+  },
   computed: {
     ...mapState(['users', 'user']),   
     filteredUsers() {
