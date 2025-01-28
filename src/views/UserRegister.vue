@@ -1,9 +1,66 @@
 <template>
   <div class="register">
-    <h2 class="fw-bold mb-4">회원가입</h2>
-    <input v-model="username" placeholder="Username" class="form-control form-control-lg mb-3" required @keydown.enter="register"/>
-    <input type="password" v-model="password" placeholder="Password" class="form-control form-control-lg" required @keydown.enter="register"/><br/>
-    <button class="btn btn-primary w-100" @click="register">회원가입</button>
+    <p class="fw-bold mb-4">chatconnect 회원가입</p>
+    <p>아이디와 이메일로 간편하게 chatconnect를 시작하세요!</p>
+    <div>
+      <label for="username">이름</label>
+      <input
+        id="username"
+        v-model="username" 
+        placeholder="사용자 이름" 
+        required 
+      />
+    </div>
+    <div>
+      <label for="id">아이디</label>
+      <input
+        id="id"
+        v-model="id" 
+        placeholder="아이디" 
+        required 
+      />
+    </div>
+    <div>
+      <label for="password">비밀번호</label>
+      <input 
+        id="pasword"
+        type="password" 
+        v-model="password" 
+        placeholder="비밀번호" 
+        required 
+      />
+    </div>
+    <div>
+      <label for="email">이메일</label>
+      <input
+        id="email"
+        type="email" 
+        v-model="email" 
+        placeholder="이메일" 
+        required 
+      />
+    </div>
+    <div>
+      <label for="phonenumber">전화번호</label>
+      <input
+        id="phonenumber"
+        type="text" 
+        v-model="phonenumber" 
+        placeholder="전화번호" 
+        required 
+      />
+    </div>
+    <div>
+      <label for="profileimage">프로필 이미지</label>
+      <input
+        id="profileimage"
+        type="file" 
+        @change="onFileChange"
+        accept="image/*"
+        required 
+      />
+    </div>
+    <button @click="register">회원가입</button>
   </div>
 </template>
 
@@ -14,40 +71,43 @@ export default {
   data() {
     return {
       username: '',
+      id: '',
       password: '',
+      email: '',
+      phonenumber: '',
+      profileImage: null,
     };
   },
   methods: {
     async register() {
       try {
-        const response = await axios.post('http://localhost:5000/register', {
-          username: this.username,
-          password: this.password,
-        });
-        alert(response.data.msg);
+        console.log('회원가입 시작!');
+        // FormData 생성
+        const formData = new FormData();
+        formData.append('username', this.username);
+        formData.append('id', this.id);
+        formData.append('password', this.password);
+        formData.append('email', this.email);
+        formData.append('phonenumber', this.phonenumber);
+        formData.append('profileImage', this.profileImage);
 
-        await this.$store.dispatch('login', {
-          username: this.username,
-          password: this.password,
-        });
+        const response = await axios.post('http://localhost:5000/register', formData);
+        console.log('회원가입한 사용자', response.data);
 
         await this.$store.dispatch('fetchUserData');
 
-        this.$router.push('/mainchat/chatlist');
+        this.$router.push('/');
       } catch (error) {
         console.error(error.response ? error.response.data : error);
-        alert('이미 등록된 사용자입니다. 로그인 해주세요.');
       }
     },
+    onFileChange(event) {
+      // 사용자가 선택한 파일 저장
+      const file = event.target.files[0];
+      if (file) {
+        this.profileImage = file;
+      }
+    }
   },
 };
 </script>
-
-<style>
-.register {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -70%);
-}
-</style>
