@@ -3,8 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import UserRegister from '../views/UserRegister.vue'
 import UserLogin from '../views/UserLogin.vue'
 import MainChat from '../views/MainChat.vue'
-import ChatList from '../views/ChatList.vue'
 import ChatRoom from '../views/ChatRoom.vue'
+import ChattingList from '../views/ChattingList.vue'
 import store from '../../store'
 
 const routes = [
@@ -27,19 +27,16 @@ const routes = [
     path: '/mainchat',
     name: 'MainChat',
     component: MainChat,
-    meta: {requiresAuth: true},
-    children: [
-      {
-        path: 'chatlist',
-        component: ChatList,
-        meta: {requiresAuth: true}
-      },
-      {
-        path: 'chatroom',
-        component: ChatRoom,
-        meta: {requiresAuth: true}
-      }
-    ]
+  },
+  {
+    path: '/chattinglist',
+    name: 'ChattingList',
+    component: ChattingList,
+  },
+  {
+    path: '/mainchat/chatroom',
+    name: 'ChatRoom',
+    component: ChatRoom
   }
 ]
 
