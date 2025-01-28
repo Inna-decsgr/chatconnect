@@ -1,20 +1,35 @@
 <template>
-  <div v-if="user" class="p-2">
-    <div class="justify-content-between align-items-center mb-4">
-      <p class="fs-4 fw-bold">친구들과 채팅을 시작해보세요</p>
-      <button class="btn btn-primary w-50" @click="logout">로그아웃</button>
+  <div v-if="user">
+    <div class="h-screen">
+      <div>
+        <div class="flex items-center justify-between pt-3 pb-2">
+          <p class="text-lg font-bold pl-5">친구</p>
+          <div class="pr-4">
+            <button class="border py-1 px-2 rounded-md text-xs" @click="logout">로그아웃</button>
+          </div>
+        </div>
+        <div class="pb-2 border-b">
+          <UserCard />
+        </div>
+        <div>
+          <FriendsList />
+        </div>
+      </div>
     </div>
-    <p v-if="user" class="fs-5 border-bottom pb-4">나 : {{ user.username }}</p>
-    <nav class="fs-5 mt-3">
-      <router-link to="/mainchat/chatlist">친구 목록</router-link>
-    </nav>
     <router-view></router-view>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex';
+import UserCard from '../components/UserCard.vue'
+import FriendsList from '../components/FriendsList.vue'
+
 export default {
+  components: {
+    UserCard,
+    FriendsList
+  },
   computed: {
     ...mapState(['user']),
   },
