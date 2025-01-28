@@ -1,12 +1,27 @@
 <template>
-  <div id="id" class="app-container">
-    <div class="content-wrapper">
+  <div class="flex h-screen">
+    <div v-if="user" class="w-[70px] bg-gray-100 border-r">
+      <MainBar />
+    </div>
+    <div class="flex-1">
       <router-view />
     </div>
   </div>
 </template>
 
 <script>
+import MainBar from './components/MainBar.vue'
+
+export default {
+  components: {
+    MainBar
+  },
+  computed: {
+    user() {
+      return this.$store.getters.getUser;
+    }
+  }
+}
 </script>
 
 
@@ -28,7 +43,6 @@
     height: 100%;
     max-width: 700px;
     max-height: 1000px;
-    padding: 20px; 
     border: 1px solid #dee2e6; 
     border-radius: 8px;
     background-color: white; 
