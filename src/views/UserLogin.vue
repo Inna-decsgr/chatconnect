@@ -1,9 +1,23 @@
 <template>
-  <div class="login">
-    <h2 class="fw-bold mb-4">로그인</h2>
-    <input v-model="username" placeholder="Username" class="form-control form-control-lg mb-3" required @keydown.enter="login"/>
-    <input type="password" v-model="password" placeholder="Password"  class="form-control form-control-lg" required @keydown.enter="login"/><br/>
-    <button class="btn btn-primary w-100" @click="login">로그인</button>
+  <div>
+    <p>로그인</p>
+    <div>
+      <label for="id">아이디</label>
+      <input 
+        id="id"
+        v-model="id" 
+        placeholder="아이디" 
+      />
+    </div>
+    <div>
+      <label for="password">비밀번호</label>
+      <input 
+        id="password"
+        v-model="password" 
+        placeholder="비밀번호" 
+      />
+    </div>
+    <button @click="login">로그인</button>
   </div>
 </template>
 
@@ -11,18 +25,19 @@
 export default {
   data() {
     return {
-      username: '',
+      id: '',
       password: '',
     };
   },
   methods: {
     async login() {
       try {
-        const credentials = { username: this.username, password: this.password };
-        const response = await this.$store.dispatch('login', credentials);
+        const userdata = { id: this.id, password: this.password };
+        console.log('로그인할 사용자', userdata);
+        const response = await this.$store.dispatch('login', userdata);
         alert('로그인 성공')
         console.log(response);
-        this.$router.push('/mainchat/chatlist');
+        this.$router.push('/mainchat');
       } catch (error) {
         console.error(error);
         alert('로그인에 실패하였습니다. 아이디와 비밀번호를 확인해주세요.');
@@ -31,12 +46,3 @@ export default {
   },
 };
 </script>
-
-<style>
-.login {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -70%);
-}
-</style>
