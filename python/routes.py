@@ -289,22 +289,16 @@ def get_last_message(user_id):
         # Messages 와 User 테이블 조인
         messages = db.session.query(
             Messages,
-            case( # case((조건, 반환값), else_=기본값)
-                (Messages.sender_id == int(user_id), User.profile_image),  # 메세지를 보낸 사람이 현재 사용자라면 받는 사람의 프로필 이미지를 가져옴
-                else_=None
-            ).label("receiver_profile_image"),
-            case(
-                (Messages.receiver_id == int(user_id), User.profile_image),  # 메시지를 받는 사람이 현재 사용자라면 보낸 사람의 프로필 이미지를 가져옴
-                else_=None
-            ).label("sender_profile_image") # 쿼리 결과에 별칭 붙임
+            User.profile_image.label("profile_image"),  # 상대방의 프로필 이미지
+            User.username.label("username")  # 상대방의 이름
         ).join(  # join은 두 테이블 연결, 여기서는 Messages랑 User 테이블을 연결
-            User, Messages.receiver_id == User.user_id  
-            # 사용자가 로그인을 하게 되면 항상 보내는 입장이 되고 다른 사용자들은 항상 받는 사람이 되기 때문에 받는 사람에 대한 사용자 정보만 가져오도록 함
-            # 이때 Messages.sender_id == User.user_id도 비교하게 되면 두 테이블을 조인하게 되면서 한 메시지에 대해 결과가 2개가 나오게 되고 원치않는 정보까지 반환될 수 있음
-            # 헷갈리면 안되는게 receiver_id와 현재 사용자(전달받은)를 비교하는게 아니라 User 테이블의 있는(모든 사용자 중) 사용자와 일치하는 지 비교하는 것임
+            User, db.or_(
+                (Messages.sender_id == User.user_id),  # 보낸 사람과 조인
+                (Messages.receiver_id == User.user_id)  # 받은 사람과 조인
+            )
         ).filter( # SQL의 WHERE 조건과 동일
             # 메시지의 보낸 사람 또는 받는 사람이 현재 사용자(전달받은 user_id)인 메시지만 추려서 가져옴
-            (Messages.sender_id == int(user_id)) | (Messages.receiver_id == int(user_id))  
+            (Messages.sender_id == int(user_id)) | (Messages.receiver_id == int(user_id))
         ).order_by(Messages.created_at.desc()).all() # Messages.created_at을 기준으로 메시지를 오래된 순서대로 정렬한 후 모든 결과를 가져옴
 
         # SQLAlchemy 조인 결과로 인해 메시지 하나에 대해 두 개의 결과가 생성이 됨. 조인 조건에서 Messages.sender_id와 Messages.receiver_id가 모두 User.user_id와 조인되면서 동일한 메시지가 "보낸 사람의 정보"와 "받은 사람의 정보"를 기준으로 두 번 반환된다.
@@ -314,44 +308,35 @@ def get_last_message(user_id):
 
 
         # 메시지와 사용자 정보를 포함한 결과 반환
-        result = [
-            {
-                **msg.to_dict(), # 쿼리 결과인 messages를 순회하며 to_dict 메서드로 메시지 정보를 딕셔너리 형식로 변환
-                "profile_image": sender_profile_image if msg.receiver_id == int(user_id) else receiver_profile_image,
-                # 메시지의 보낸 사람(sender) 또는 받는 사람(receiver)에 따라 프로필 이미지 설정
-                # 내가 메시지를 받은 사람이라면(if msg.receiver_id == int(user_id)) 보낸 사람의 프로필 이미지를(sender_profile_image)를 그 반대로 내가 메시지를 보낸 사람이라면 받은 사람의 프로필 이미지를 (receiver_profile_image) profile_image에 저장
-                "username": (
-                    msg.sender_id == int(user_id) and User.query.filter_by(user_id=msg.receiver_id).first().username
-                ) or User.query.filter_by(user_id=msg.sender_id).first().username
-                # User 테이블에서 상대방의 username을 가져옴
-                # 내가 메시지를 보냈다면 User 테이블에서 메시지를 받은 상대방(msg.receiver_id)와 일치하는 user_id를 가진 사용자의 username을 반환하고 내가 메시지를 받았다면 보낸 사람(msg.sender_id)와 일치하는 user_id를 가진 사용자의 username을 찾아서 반환
-            }
-            for msg, receiver_profile_image, sender_profile_image in messages
-        ]
-        result = make_json_serializable(result)
+        result = []
+        for msg, profile_image, username in messages:
+            if msg.sender_id == int(user_id):
+                # 내가 보낸 경우, 상대방(receiver)의 정보 반환
+                receiver = User.query.filter_by(user_id=msg.receiver_id).first()
+                result.append({
+                    "chat_id": msg.chat_id,
+                    "text": msg.text,
+                    "created_at": msg.created_at,
+                    "receiver_id": msg.receiver_id,
+                    "receiver_name": receiver.username,
+                    "profile_image": receiver.profile_image
+                })
+            else:
+                # 내가 받은 경우, 상대방(sender)의 정보 반환
+                sender = User.query.filter_by(user_id=msg.sender_id).first()
+                result.append({
+                    "chat_id": msg.chat_id,
+                    "text": msg.text,
+                    "created_at": msg.created_at,
+                    "receiver_id": msg.sender_id,
+                    "receiver_name": sender.username,
+                    "profile_image": sender.profile_image
+                })
 
         return jsonify(result), 200
     except Exception as e:
         print(f"Error fetching messages: {e}")
         return jsonify({'message:' 'Failed to fetch messages'}), 500
-    
-
-# JSON으로 변환할 수 없는 데이터를 변환
-# set, dict, list, tuple 또는 SQLAlchemy 객체를 재귀적으로 JSON 직렬화 가능한 형식으로 변환
-def make_json_serializable(data):
-    """모든 데이터를 JSON 직렬화 가능하게 변환"""
-    if isinstance(data, set):
-        return list(data)  # set -> list 변환
-    elif isinstance(data, dict):
-        return {k: make_json_serializable(v) for k, v in data.items()}  # dict 내부 순환
-    elif isinstance(data, list):
-        return [make_json_serializable(i) for i in data]  # list 내부 순환
-    elif isinstance(data, tuple):  # SQLAlchemy 반환된 tuple 처리
-        return [make_json_serializable(i) for i in data]
-    elif hasattr(data, "__dict__"):  # SQLAlchemy 객체 처리
-        return make_json_serializable(vars(data))
-    else:
-        return data
     
 
     
