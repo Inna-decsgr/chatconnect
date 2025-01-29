@@ -44,17 +44,11 @@ export default {
               // 상대방 정보를 display_user로 설정
               acc[chatId] = {
                 ...message,
-                display_user: message.sender_id === this.user.userid
-                  ? {
+                display_user: {
                     id: message.receiver_id,
                     name: message.receiver_name,
                     profile_image: message.profile_image
                   } // 내가 보낸 경우, receiver 정보를 저장
-                  : {
-                    id: message.sender_id,
-                    name: message.sender_name,
-                    profile_image: message.profile_image
-                  } // 내가 받은 경우, sender 정보를 저장
               };
             }
             return acc;
