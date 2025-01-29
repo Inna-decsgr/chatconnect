@@ -67,7 +67,7 @@ export default {
       const response = await axios.get(`http://localhost:5000/messages/${chatid}`);
       // 조건: receiver_id가 나이고 is_read가 0인 메시지 필터링
       const unreadCount = response.data.reduce((count, m) => {
-        return !m.is_read ? count + 1 : count;
+        return m.receiver_id == this.user.userid && !m.is_read ? count + 1 : count;
       }, 0);
       console.log(`채팅방 ${chatid}의 읽지 않은 메세지 개수:`, unreadCount);
       this.unreadMessages[chatid] = unreadCount;
