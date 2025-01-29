@@ -17,7 +17,7 @@
             <p class="text-sm" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
             <div class="flex">
               <p class="text-sm" :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
-              <p v-if="!msg.is_read" class="unread-indicator">1</p>
+              <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
               <p class="time">{{ msg.created_at }}</p>
             </div>
           </div>
