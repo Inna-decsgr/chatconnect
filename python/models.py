@@ -1,6 +1,14 @@
 from python import db
 from datetime import datetime, timezone
 
+# 사용자 즐겨찾기 관계를 저장할 중간 테이블
+favorite_users = db.Table(
+    'favorite_users',
+    db.Column('user_id', db.Integer, db.ForeignKey('Users.user_id'), primary_key=True),
+    db.Column('favorite_id', db.Integer, db.ForeignKey('Users.user_id'), primary_key=True)
+)
+
+
 
 # User 모델 정의
 class User(db.Model):
@@ -13,6 +21,14 @@ class User(db.Model):
     phonenumber = db.Column(db.String(20), unique=True, nullable=False)
     profile_image = db.Column(db.String(255))
     profile_message = db.Column(db.String(255))
+    favorite_users = db.relationship(
+        'User',
+        secondary=favorite_users,
+        primaryjoin=(favorite_users.c.user_id == user_id),
+        secondaryjoin=(favorite_users.c.favorite_id == user_id),
+        backref=db.backref('favorited_by', lazy='dynamic'),
+        lazy='dynamic'
+    )
 
     def to_dict(self):
         return {
@@ -22,7 +38,8 @@ class User(db.Model):
             'email': self.email,
             'phonenumber': self.phonenumber,
             'profile_image': self.profile_image,
-            'profile_message': self.profile_message
+            'profile_message': self.profile_message,
+            'favorite_users': [user.user_id for user in self.favorite_users] 
         }
     
 # Messages 모델 정의
