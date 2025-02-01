@@ -371,4 +371,48 @@ def set_is_read_true(chat_id):
 
 
 
+# 친구 즐겨찾기에 추가하는 함수
+@app.route('/addfavorite/<user_id>', methods=['POST'])
+def add_favorite(user_id):
+    try: 
+        data = request.json # 요청 데이터로 부터 friendid 추출해서 favorite_id에 저장
+        favorite_id = data['friendid']
+
+        user = User.query.get(user_id)  # user_id에 해당하는 사용자를 User 모델에서 가져와 user에 저장
+        favorite_user = User.query.get(favorite_id) # 즐겨찾기 할 친구의 아이디를 User 모델에서 가져와 favorite_user에 저장
+
+        print(type(user.favorite_users)) 
+
+        if user and favorite_user:  # 사용자와 즐겨찾기할 대상 모두 있을 경우
+            if favorite_user in user.favorite_users:
+                return jsonify({
+                    'message': 'Favorite user already added',
+                    'favorite_users': [u.user_id for u in user.favorite_users.all()]
+                }), 400
+            
+            # 즐겨찾기에 추가
+            user.favorite_users.append(favorite_user)  # user의 favorite_users에 favorite_user(즐겨찾기할 대상)을 append(추가)
+            db.session.commit()  # 추가한 데이터 저장
+
+
+            return jsonify({
+                'message': 'Favorite user added successfully',
+                'favorite_users': [u.user_id for u in user.favorite_users.all()]
+            }), 200
+        return jsonify({'message': 'User or favorite user not found'}), 404
+
+    except Exception as e:
+        print(f"Error add favorite_id: {e}")
+        return jsonify({'message:' 'Failed to add favorite user'}), 500
+    
+
+
+# 사용자가 즐겨찾기한 친구 목록 가져오기
+@app.route('/getfavoritelist/<user_id>', methods=['GET'])
+def get_favorites(user_id):
+    user = User.query.get(user_id)
+    if user:
+        return [u.to_dict() for u in user.favorite_users]
+    
+    return []
 
