@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div :class="{'bg-gray-100 py-3 px-4': user.userid === me.userid}" class="flex items-center justify-between px-4 py-[7px]">
+    <div :class="{'py-3 px-4': user.userid === me.userid}" class="flex items-center justify-between px-4 py-[7px]">
       <div class="flex items-center">
         <img :src="user.profile_image ? `http://localhost:5000${user.profile_image}` : '/images/사용자 프로필.png'" alt="사용자 프로필 이미지" class="w-[50px] h-[50px] object-cover rounded-[20px]" />
         <div class="pl-3">
@@ -8,9 +8,12 @@
           <p class="text-gray-500 text-xs">{{ editedProfileMessage }}</p>
         </div>
       </div>
-      <div>
+      <div class="flex items-center">
         <button v-if="user.userid === me.userid" @click="gotoMyProfile">
           <i class="fa-solid fa-gear"></i>
+        </button>
+        <button v-if="user.userid !== me.userid && !favorite" @click="setFavorite(user.user_id)">
+          <i class="fa-regular fa-star"></i>
         </button>
       </div>
     </div>
@@ -90,6 +93,18 @@ export default {
     friends: {
       type: Object,
       default: null
+    },
+    favorites: {
+      type: Object,
+      default: null
+    },
+    favorite: {
+      type: Boolean,
+      default: false
+    },
+    includefriends: {
+      type: Array,
+      default: null
     }
   },
   computed: {
@@ -98,7 +113,7 @@ export default {
     },
     user() {
       // getters로 가져온 user도 Vuex 상태(state.user)를 참조하기 때문에 Vuex 상태가 변경되면 이것 또한 반응성 시스템에 의해 자동으로 업데이트된다.
-      return this.friends || this.$store.getters.getUser;
+      return this.friends || this.favorites || this.$store.getters.getUser;
     },
   },
   // Vuex는 Vue의 반응성 시스템을 기반으로 동작, 즉 Vuex상태(state.user)가 변경되면 해당 상태(user)를 사용하는 Vue 컴포넌트가 자동으로 업데이트됨. Vue는 데이터를 참조하고 있는 모든 곳에서 변경을 감지하고, 자동으로 업데이트하도록 설계되어 있음
@@ -156,6 +171,14 @@ export default {
       this.isShowSetting = false;
       console.log(response.data);
     },
+    async setFavorite(friendid) {
+      console.log(this.me.userid);
+      console.log(friendid);
+      const response = await axios.post(`http://localhost:5000/addfavorite/${this.me.userid}`, {
+        friendid: friendid
+      });
+      console.log('친구 즐겨찾기 하기', response.data);
+    }
   }
 }
 </script>
