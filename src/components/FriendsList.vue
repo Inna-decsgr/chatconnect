@@ -1,9 +1,9 @@
 <template>
   <div>
-    <p class="text-xs text-gray-500 font-bold py-3 px-4">친구 {{ filteredUsers.length }}</p>
+    <p v-if="filteredUsers" class="text-xs text-gray-500 font-bold py-3 px-4">친구 {{ filteredUsers.length }}</p>
     <ul class="d-flex flex-column">
-      <li v-for="(user, index) in filteredUsers" :key="index" class="d-flex justify-content-between align-items-center w-100 hover:bg-gray-100" @dblclick="startchat(user)">
-        <UserCard :friends="user" />
+      <li v-for="(user, index) in filteredUsers" :key="index" class="w-100 hover:bg-gray-100" @dblclick="startchat(user)">
+        <UserCard :friends="user" :favorites="favorites" />
       </li>
     </ul>
   </div>
@@ -21,6 +21,12 @@ export default {
     ...mapState(['users', 'user']),   
     filteredUsers() {
       return this.users.filter(user => user.username !== this.user.username);
+    }
+  },
+  props: {
+    favorites: {
+      type: Object,
+      default: null
     }
   },
   mounted() {
