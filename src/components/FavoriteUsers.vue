@@ -3,7 +3,7 @@
     <div>
       <div class="flex items-center justify-between py-[7px]">
         <p class="text-xs text-gray-500 font-bold py-3 px-4">즐겨찾기</p>
-        <button @click="togglefavorite">
+        <button v-if="this.favoriteusers.length >= 1" @click="togglefavorite">
           <i :class="showfavorite ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-xs text-gray-500 pr-[27px]"></i>
         </button>
       </div>
@@ -29,11 +29,21 @@ export default {
   },
   components: {
     UserCard
-},
+  },
+  watch: {
+    '$store.getters.getFavoriteUsers': {
+      handler(newValue) {
+        console.log('즐겨찾기 목록 변경됨:', newValue);
+        this.favoriteusers = newValue || []; // ✅ 기본값 설정
+      },
+      deep: true
+    }
+  },
   computed: {
     user() {
       return this.$store.getters.getUser;
-    }
+    },
+
   },
   mounted() {
     this.getFavoriteUsers();
@@ -44,7 +54,8 @@ export default {
       const response = await axios.get(`http://localhost:5000/getfavoritelist/${this.user.userid}`)
       console.log('사용자의 즐겨찾기 친구 목록', response.data);
       this.favoriteusers = response.data.map(user => user);
-      console.log('즐겨찾기된 사용자 아이디', this.favoriteusers);
+      this.$store.commit('SET_FAVORITE', this.favoriteusers);
+      console.log('즐겨찾기된 사용자', this.favoriteusers);
     },
     togglefavorite() {
       this.showfavorite = !this.showfavorite
