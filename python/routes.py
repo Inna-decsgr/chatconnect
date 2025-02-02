@@ -381,7 +381,6 @@ def add_favorite(user_id):
         user = User.query.get(user_id)  # user_id에 해당하는 사용자를 User 모델에서 가져와 user에 저장
         favorite_user = User.query.get(favorite_id) # 즐겨찾기 할 친구의 아이디를 User 모델에서 가져와 favorite_user에 저장
 
-        print(type(user.favorite_users)) 
 
         if user and favorite_user:  # 사용자와 즐겨찾기할 대상 모두 있을 경우
             if favorite_user in user.favorite_users:
@@ -405,6 +404,33 @@ def add_favorite(user_id):
         print(f"Error add favorite_id: {e}")
         return jsonify({'message:' 'Failed to add favorite user'}), 500
     
+
+
+
+# 친구 즐겨찾기 목록에서 해당 사용자 삭제하기
+@app.route('/removefavorite/<user_id>', methods=['POST'])
+def remove_favorite(user_id):
+    try:
+        data = request.json
+        favorite_id = data['friendid']
+        
+        user= User.query.get(user_id)
+        favorite_user = User.query.get(favorite_id)
+
+        if user and favorite_user:
+            if favorite_user in user.favorite_users:
+                user.favorite_users.remove(favorite_user)
+                db.session.commit()
+
+            return jsonify({
+                'message': 'Favorite user remove successfully',
+                'favorite_users': [u.user_id for u in list(user.favorite_users)]
+            }), 200
+        return jsonify({'message': 'User or favorite user not found'}), 404
+    
+    except Exception as e:
+        print(f"Error remove favorite_id: {e}")
+        return jsonify({'message:' 'Failed to remove favorite user'}), 500
 
 
 # 사용자가 즐겨찾기한 친구 목록 가져오기
