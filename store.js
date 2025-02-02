@@ -8,6 +8,7 @@ const store = createStore({
     user: {},   
     users: [],  
     token: localStorage.getItem('access_token') || null,
+    favorite_users: []
   },
   mutations: {
     SET_USER(state, user) {
@@ -33,6 +34,18 @@ const store = createStore({
     },
     setProfileMessage(state, message) {
       state.user.profile_message = message;
+    },
+    SET_FAVORITE(state, users) {
+      state.favorite_users = users;
+    },
+    CLEAR_FAVORITE(state) {
+      state.favorite_users = null;
+    },
+    addFavoriteUser(state, user) {
+      state.favorite_users.push(user);
+    },
+    removeFavoriteUser(state, friendid) {
+      state.favorite_users = state.favorite_users.filter(user => user.user_id !== friendid);
     }
   },
   actions: {
@@ -61,6 +74,7 @@ const store = createStore({
 
         console.log('로그인 응답 정보', response.data.user);
         commit('SET_USER', response.data.user);
+        commit('SET_FAVORITE', response.data.user.favorite_users);
 
         const accessToken = response.data.access_token || response.data.token;
         if (!accessToken) {
@@ -78,6 +92,7 @@ const store = createStore({
     },
     logout({ commit }) {
       commit('CLEAR_AUTH_DATA');
+      commit('CLEAR_FAVORITE')
     },
     async getFriends({ commit }) {
       try {
@@ -98,12 +113,15 @@ const store = createStore({
     },
     getMe(state) {
       return state.me;
+    },
+    getFavoriteUsers(state) {
+      return state.favorite_users;
     }
   },
   plugins: [  
     createPersistedState({
       key: 'myApp', 
-      paths: ['user'], 
+      paths: ['user', 'favorite_users'], 
     })
   ],
 });
