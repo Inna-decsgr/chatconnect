@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col h-screen">
-    <div class="w-[450px] h-[600px] mx-auto my-auto">
+    <div class="flex flex-col w-[450px] h-[600px] mx-auto my-auto">
       <p class="text-lg font-bold text-center pb-4">회원가입</p>
       <div>
         <div class="relative w-[100px] h-[100px] mx-auto">
@@ -26,7 +26,7 @@
       </div>
 
       <div>
-        <label for="username" class="w-[120px] text-center font-bold">이름</label>
+        <label for="username" class="w-[120px] text-center font-bold text-sm">이름</label>
         <input
           id="username"
           v-model="username" 
@@ -36,7 +36,7 @@
         />
       </div>
       <div>
-        <label for="id" class="w-[120px] text-center font-bold">아이디</label>
+        <label for="id" class="w-[120px] text-center font-bold text-sm">아이디</label>
         <input
           id="id"
           v-model="id" 
@@ -46,7 +46,7 @@
         />
       </div>
       <div>
-        <label for="password" class="w-[120px] text-center font-bold">비밀번호</label>
+        <label for="password" class="w-[120px] text-center font-bold text-sm">비밀번호</label>
         <input 
           id="pasword"
           type="password" 
@@ -57,7 +57,7 @@
         />
       </div>
       <div>
-        <label for="email" class="w-[120px] text-center font-bold">이메일</label>
+        <label for="email" class="w-[120px] text-center font-bold text-sm">이메일</label>
         <input
           id="email"
           type="email" 
@@ -68,7 +68,7 @@
         />
       </div>
       <div>
-        <label for="phonenumber" class="w-[120px] text-center font-bold">전화번호</label>
+        <label for="phonenumber" class="w-[120px] text-center font-bold text-sm">전화번호</label>
         <input
           id="phonenumber"
           type="text" 
@@ -78,9 +78,9 @@
           class="py-2 px-2 w-[280px] rounded-md text-sm border-1 border-gray-300 outline-none mb-2"
         />
       </div>
-      <div class="flex gap-2 mt-8">
-        <button @click="home" class="block w-[220px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">홈</button>
-        <button @click="register" class="block w-[220px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">회원가입</button>
+      <div class="flex mx-auto gap-2 mt-8">
+        <button @click="home" class="block w-[200px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">홈</button>
+        <button @click="register" class="block w-[200px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">회원가입</button>
       </div>
     </div>
   </div>
