@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import UserRegister from '../views/UserRegister.vue'
-import UserLogin from '../views/UserLogin.vue'
 import MainChat from '../views/MainChat.vue'
 import ChatRoom from '../views/ChatRoom.vue'
 import ChattingList from '../views/ChattingList.vue'
@@ -17,11 +16,6 @@ const routes = [
     path: '/register',
     name: 'UserRegister',
     component: UserRegister
-  },
-  {
-    path: '/login',
-    name: 'UserLogin',
-    component: UserLogin
   },
   {
     path: '/mainchat',
