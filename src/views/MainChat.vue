@@ -11,6 +11,9 @@
         <div class="pb-2 border-b">
           <UserCard />
         </div>
+        <div class="border-b">
+          <FavoriteUsers />
+        </div>
         <div>
           <FriendsList />
         </div>
@@ -24,11 +27,13 @@
 import { mapState } from 'vuex';
 import UserCard from '../components/UserCard.vue'
 import FriendsList from '../components/FriendsList.vue'
+import FavoriteUsers from '../components/FavoriteUsers.vue'
 
 export default {
   components: {
     UserCard,
-    FriendsList
+    FriendsList,
+    FavoriteUsers
   },
   computed: {
     ...mapState(['user']),
