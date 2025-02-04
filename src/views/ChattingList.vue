@@ -1,7 +1,24 @@
 <template>
   <div>
-    <div class="pt-3 pb-2">
-      <p class="text-lg font-bold pl-5 pb-3">채팅 <i class="fa-solid fa-caret-down"></i></p>
+    <div class="pt-3 pb-2 w-[100%]">
+      <div class="flex justify-between items-center">
+        <p class="text-lg font-bold pl-5 pb-3">채팅 <i class="fa-solid fa-caret-down"></i></p>
+        <button @click="showSearch">
+          <i class="fa-solid fa-magnifying-glass text-lg pr-5 pb-2"></i>
+        </button>
+      </div>
+      <div v-if="showSearchBar" class="flex items-center pl-4 pb-3">
+        <input 
+          type="text"
+          v-model="searchkeyword"
+          class="py-2 px-3 rounded-2xl bg-[#efefef] text-sm w-[90%] "
+          placeholder="채팅방, 참여자 검색"
+          @keyup.enter="getSearchResult"
+        >
+        <button class="w-[10%] pr-3" @click="close">
+          <i class="fa-solid fa-x text-sm text-gray-500 pl-3 cursor-pointer"></i>
+        </button>
+      </div>
       <div>
         <ChatCard :messages="groupedMessages"/>
       </div>
@@ -17,7 +34,11 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      groupedMessages: []
+      groupedMessages: [],
+      showSearchBar: false,
+      searchkeyword: null,
+      searhuserid: null,
+      searchresult: []
     }
   },
   components: {
@@ -35,6 +56,7 @@ export default {
     async getLastMessage() {
       try {
         const response = await axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`);
+        console.log('gg', response.data);
         
         this.groupedMessages = Object.values(
           response.data.reduce((acc, message) => {
@@ -59,6 +81,75 @@ export default {
         console.error('메세지 가져오기 실패', error.response?.data || error.message);
       }
     },
+    showSearch() {
+      this.showSearchBar = true;
+      console.log(this.showSearchBar);
+    },
+    close() {
+      this.showSearchBar = false
+    },
+    async getSearchResult() {
+      console.log('검색 키워드', this.searchkeyword);
+      const response = await axios.get(`http://localhost:5000/searchuser/${this.searchkeyword}`);
+      // 검색 결과가 없는 경우 빈 배열 처리
+      if (response.data.length === 0) {
+        console.log("검색 결과 없음");
+        this.groupedMessages = [];
+        return;
+      }
+
+      // ID를 기반으로 추가 데이터를 병렬로 가져오기
+      this.searchuserid = await Promise.all(
+        this.searchresult = response.data.map((user) =>
+          axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`, {
+            params: {id: user.id}
+          }).then(res => res.data)
+        )
+      );
+
+      if (this.searchresult) {
+        // 모든 요청의 결과를 Promise.all로 처리
+        Promise.all(this.searchresult).then((responses) => {  
+          let latestMessage = null;
+
+          responses.forEach((message) => {
+            // 가장 최근 메세지인지 확인하기
+            console.log('최근 메세지', message[0]);
+            latestMessage = {
+              ...message[0],
+              display_user: {
+                id: message[0].receiver_id,
+                name: message[0].receiver_name,
+                profile_image: message[0].profile_image
+              }
+            };
+          });
+
+          // 검색 최종 결과를 groppedMessages에 저장
+          this.groupedMessages = latestMessage ? [latestMessage] : [];
+          console.log('최종 검색 결과', this.groupedMessages);
+        });
+      } else {
+        this.groupedMessages = []
+      }
+    }
   }
 }
 </script>
+
+
+<style>
+input {
+  border: 1px solid #efefef;
+}
+
+input:focus {
+  background-color: white;
+  outline: none;
+  border: 1px solid rgb(187, 185, 185);
+}
+
+input:focus::placeholder {
+  color: transparent;
+}
+</style>
