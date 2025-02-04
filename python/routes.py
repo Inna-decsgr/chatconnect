@@ -43,9 +43,6 @@ def register():
     phonenumber = request.form.get('phonenumber')
     profile_image = request.files.get('profileImage')
 
-    print(f"Request files: {request.files}")  # 업로드된 파일 확인
-    print(f"Form data: {request.form}")  # 폼 데이터 확인
-
     # 사용자 아이디 중복 확인
     existing_user = User.query.filter_by(id=id).first()
     if existing_user:
@@ -134,10 +131,6 @@ def update_profile(userid):
         username = request.form.get('username')
         profile_message = request.form.get('profile_message')
         profile_image = request.files.get('profile_image')
-
-        print(f"Username: {username}")
-        print(f"Profile Message: {profile_message}")
-        print(f"Profile Image: {profile_image}")
 
 
         # 사용자 데이터 업데이트
@@ -285,9 +278,14 @@ def get_message(chat_id):
 # 대화목록에서 보여줄 마지막 메세지와 대화방에 대한 정보 가져오기
 @app.route('/lastmessage/<user_id>', methods=['GET'])
 def get_last_message(user_id):
+    # 검색 기능에서 추가적으로 전달받을 id(선택적)
+    filter_user_id = request.args.get('id', None)
+    print('사용자 아이디', user_id)
+    print('검색할 아이디', filter_user_id)
+
     try:
         # Messages 와 User 테이블 조인
-        messages = db.session.query(
+        query = db.session.query(
             Messages,
             User.profile_image.label("profile_image"),  # 상대방의 프로필 이미지
             User.username.label("username")  # 상대방의 이름
@@ -299,7 +297,17 @@ def get_last_message(user_id):
         ).filter( # SQL의 WHERE 조건과 동일
             # 메시지의 보낸 사람 또는 받는 사람이 현재 사용자(전달받은 user_id)인 메시지만 추려서 가져옴
             (Messages.sender_id == int(user_id)) | (Messages.receiver_id == int(user_id))
-        ).order_by(Messages.created_at.desc()).all() # Messages.created_at을 기준으로 메시지를 오래된 순서대로 정렬한 후 모든 결과를 가져옴
+        )
+        
+        if filter_user_id:
+            query = query.filter(
+                db.or_(
+                    db.and_(Messages.sender_id == user_id, Messages.receiver_id == filter_user_id),
+                    db.and_(Messages.sender_id == filter_user_id, Messages.receiver_id == user_id)
+                )
+            )
+            
+        messages = query.order_by(Messages.created_at.desc()).all() # Messages.created_at을 기준으로 메시지를 오래된 순서대로 정렬한 후 모든 결과를 가져옴
 
         # SQLAlchemy 조인 결과로 인해 메시지 하나에 대해 두 개의 결과가 생성이 됨. 조인 조건에서 Messages.sender_id와 Messages.receiver_id가 모두 User.user_id와 조인되면서 동일한 메시지가 "보낸 사람의 정보"와 "받은 사람의 정보"를 기준으로 두 번 반환된다.
         # 조인 조건에서 sender_id와 receiver_id 모두 User.user_id와 조인되므로 Messages의 한 레코드가 두 번 반환된다.
@@ -316,7 +324,7 @@ def get_last_message(user_id):
                 result.append({
                     "chat_id": msg.chat_id,
                     "text": msg.text,
-                    "created_at": msg.created_at,
+                    "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                     "receiver_id": msg.receiver_id,
                     "receiver_name": receiver.username,
                     "profile_image": receiver.profile_image
@@ -327,12 +335,11 @@ def get_last_message(user_id):
                 result.append({
                     "chat_id": msg.chat_id,
                     "text": msg.text,
-                    "created_at": msg.created_at,
+                    "created_at": msg.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                     "receiver_id": msg.sender_id,
                     "receiver_name": sender.username,
                     "profile_image": sender.profile_image
                 })
-
         return jsonify(result), 200
     except Exception as e:
         print(f"Error fetching messages: {e}")
@@ -347,9 +354,6 @@ def set_is_read_true(chat_id):
         # POST 요청에서 user_id 가져오기
         data = request.json
         current_user_id = data.get('userid') # 클라이언트에서 전달된 user_id
-
-        print('채팅방아이디', chat_id)
-        print('사용자 아이디', current_user_id)
 
         if not current_user_id:
             return jsonify({'error': 'User ID is required'}), 400
@@ -441,4 +445,19 @@ def get_favorites(user_id):
         return [u.to_dict() for u in user.favorite_users]
     
     return []
+
+
+
+# 검색한 키워드로 사용자 찾기
+@app.route('/searchuser/<keyword>', methods=['GET'])
+def get_search_user_result(keyword):
+    # username에 keyword가 포함된 사용자 검색
+    users = User.query.filter(User.username.ilike(f"%{keyword}%")).all()
+    print('검색사용자', users)
+
+    if users:
+        return jsonify([{"id": user.user_id, "username": user.username} for user in users])
+    
+    return jsonify([]), 200
+
 
