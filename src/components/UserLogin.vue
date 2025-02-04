@@ -44,7 +44,6 @@ export default {
         const userdata = { id: this.id, password: this.password };
         console.log('로그인할 사용자', userdata);
         const response = await this.$store.dispatch('login', userdata);
-        alert('로그인 성공')
         console.log(response);
         this.$router.push('/mainchat');
       } catch (error) {
