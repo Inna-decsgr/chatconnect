@@ -1,39 +1,54 @@
-<template >
-  <div class="chat-container p-3" ref="chatContainer">
-    <div v-for="(msg, index) in messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
+<template>
+  <div id="app">
+    <div>
+      <ChatTopBar />
+    </div>
+    <div class="chat-container p-3" ref="chatContainer">
+      <div v-for="(msg, index) in messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
       <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
-    8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
-    공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
-    데이터베이스 보면서 이해하면 더 잘될거야. receiver_id가 userid와 같은것만 따로 모아서 왼쪽 정렬하고
-    receiver_id와 userid가 다른것만 모아서 오른쪽 정렬하는거야! 그냥 야매로 생각하자면 현재 로그인된
-    사용자가 sender가 되어서 오른쪽에 보여야하는거잖아. 그러니까 반대로 생각해서 receiver_id와 userid
-    가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
-    미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
-    같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
-      <div class="message-container">
-        <div class="flex">
-          <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
-          <div class="pl-3">
-            <p class="text-sm" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
-            <div class="flex">
-              <p class="text-sm" :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
-              <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
-              <p class="time">{{ msg.created_at }}</p>
+      8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
+      공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
+      데이터베이스 보면서 이해하면 더 잘될거야. receiver_id가 userid와 같은것만 따로 모아서 왼쪽 정렬하고
+      receiver_id와 userid가 다른것만 모아서 오른쪽 정렬하는거야! 그냥 야매로 생각하자면 현재 로그인된
+      사용자가 sender가 되어서 오른쪽에 보여야하는거잖아. 그러니까 반대로 생각해서 receiver_id와 userid
+      가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
+      미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
+      같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
+        <div class="message-container">
+          <div class="flex">
+            <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
+            <div class="pl-3">
+              <p class="text-[12px] mb-[6px]" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
+              <div class="flex">
+                <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
+                <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
+                <p class="time">{{ msg.created_at }}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="flex bg-red-100">
-    <input 
-      type="text" 
-      class="basis-5/6 text-xs p-3" 
-      v-model="newMessage" 
-      placeholder="메시지 입력" 
-      @keyup.enter="sendmessage"
-    >
-    <button class="text-xs basis-1/6" @click="sendmessage">전송</button>
+    <div class="flex">
+      <input 
+        type="text" 
+        class="basis-5/6 text-xs p-3 outline-none" 
+        v-model="newMessage" 
+        placeholder="메시지 입력" 
+        @keyup.enter="sendmessage"
+        @input="newMessage = $event.target.value.trim()"
+      >
+      <!--@input 이벤트는 사용자가 입력 필드에 값을 입력하거나 변경할 때마다 트리거됨. 
+        입력한 값을 실시간으로 감지하면서 추가로 공백 제거 작업을 처리하기 위해서 사용.
+        Vue에서는 v-model과 동일한 동작으로 수행하기 때문에 데이터 간의 양방향 바인딩을 설정하는 역할을 함.
+        v-model을 사용했지만 추가적인 데이터 처리(공백 제거, 유효성 검사)가 필요할 때 유용.
+      -->
+      <button 
+        class="text-xs basis-1/6" 
+        :disabled="!newMessage.trim()"
+        :class="newMessage ? 'bg-[#f7e330] hover:bg-[#ffd966]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'"
+        @click="sendmessage">전송</button>
+    </div>
   </div>
 </template>
 
@@ -41,9 +56,13 @@
 import axios from 'axios'
 import { mapState } from 'vuex'
 import { v4 as uuidv4 } from 'uuid';
-import { formatDatetime } from '@/utils/formatDate';
+import { chatformatTime } from '@/utils/chatformatTime';
+import ChatTopBar from './ChatTopBar.vue';
 
 export default {
+  components: {
+    ChatTopBar
+  },
   data() {
     return {
       newMessage: '',
@@ -71,6 +90,10 @@ export default {
     friendName: {
       type: String,
       required: true
+    },
+    friendImage: {
+      type: String,
+      required: false
     }
   },
   methods: {
@@ -103,7 +126,7 @@ export default {
         this.messages = response.data.map(msg => {
           return {
             ...msg,
-            created_at: formatDatetime(msg.created_at)  
+            created_at: chatformatTime(msg.created_at)  
           };
         });
       } catch (error) {
@@ -129,7 +152,7 @@ export default {
           console.log('보낸 메시지', response.data);
           const formattedMessage = {  
             ...response.data,
-            created_at: formatDatetime(response.data.created_at)
+            created_at: chatformatTime(response.data.created_at)
           }
           this.messages.push(formattedMessage);
           this.newMessage = '';
@@ -165,10 +188,17 @@ export default {
 </script>
 
 <style>
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* 화면 전체를 채움 */
+}
+
 .chat-container {
   height: 500px;
+  flex: 1;
   overflow-y: auto;
-  background: rgb(242, 244, 252);
+  background: #bad0e5;
   padding: 10px;
 }
 
@@ -178,55 +208,74 @@ export default {
 }
 
 .sender-wrapper {
-  align-items: flex-end; 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;  /* 메세지 오른쪽 정렬*/
   position: relative;
 }
 
 .receiver-wrapper {
-  align-items: flex-start; 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;  /* 메세지 왼쪽 정렬*/ 
 }
 
 .message-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-end;  /* 시간이랑 말풍선 수직 정렬 */
   max-width: 70%;
-  position: relative;
-}
-
-.message {
-  padding: 10px;
-  border-radius: 10px;
-  margin: 5px 0;
-  position: relative;
+  margin-bottom: 10px;
 }
 
 .sender {
-  background-color: #e1ffc7; 
-  align-self: flex-end; 
+  background-color: #f7e330; 
+  border-radius: 4px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-left: 55px;
+  font-size: 12px;
 }
+
 
 .receiver {
-  background-color: #d1e7ff; 
-  align-self: flex-start; 
+  background-color: white;
+  border-radius: 4px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+  position: relative;
+  margin-right: 7px; 
+  font-size: 12px;
 }
 
-.sender-wrapper .time {
-  font-size: 12px;
-  color: darkgray;
-  align-self: flex-start; /*시간을 왼쪽에 정렬*/
-  position: absolute;
-  top: 50%; /* 말풍선 중앙에 위치 */
-  left: -50px; /* 말풍선 왼쪽으로 이동 */
+.message-wrapper .time {
+  align-content: flex-end;
 }
+
+.receiver-wrapper .time {
+  color: #555555;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.sender-wrapper .time {
+  position: absolute;
+  color: #555555;
+  flex-shrink: 0;
+  align-self: flex-end;
+  font-size: 11px;
+}
+
 
 /* 읽지 않은 메시지 (1)를 시간 위에 작은 크기로 표시 */
 .sender-wrapper .unread-indicator {
-  font-size: 10px;
-  color: orange;
-  font-weight: bold;
+  font-size: 11px;
+  color: #f7e330;
   position: absolute;
-  top: 25%; /* 시간 위로 이동 */
-  left: 0; /* 말풍선 왼쪽으로 이동 */
+  margin-left: 40px;
 }
 
 .sender::after,
@@ -238,25 +287,37 @@ export default {
 }
 
 .sender::after {
-  border-left: 10px solid #e1ffc7;
-  border-top: 10px solid transparent;
+  border-left: 13px solid #f7e330;
+  border-top: 2px solid transparent;
   border-bottom: 10px solid transparent;
   right: -10px; 
-  top: 10px;
+  top: 8px;
 }
 
 .receiver::after {
-  border-right: 10px solid #d1e7ff;
-  border-top: 10px solid transparent;
+  border-right: 13px solid white;
+  border-top: 2px solid transparent;
   border-bottom: 10px solid transparent;
   left: -10px;
-  top: 10px;
+  top: 8px;
 }
 
-.time {
-  font-size: 12px;
-  margin-left: 7px;
-  color: darkgray;
-  align-self: flex-end; /* 시간을 오른쪽으로 정렬 */
+/* 스크롤바 전체 영역 */
+::-webkit-scrollbar {
+  width: 10px; /* 세로 스크롤바 너비 */
+  height: 10px; /* 가로 스크롤바 높이 */
 }
+
+/* 스크롤바 슬라이더 */
+::-webkit-scrollbar-thumb {
+  background: #a8a8a8; /* 슬라이더 색상 */
+  border-radius: 10px; /* 둥근 모서리 */
+}
+
+/* 슬라이더에 마우스를 올렸을 때 */
+::-webkit-scrollbar-thumb:hover {
+  background: #555; /* 호버 시 색상 */
+}
+
+
 </style>
