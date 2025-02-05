@@ -36,7 +36,7 @@
         v-model="newMessage" 
         placeholder="메시지 입력" 
         @keyup.enter="sendmessage"
-        @input="newMessage = $event.target.value.trim()"
+        @input="newMessage = $event.target.value"
       >
       <!--@input 이벤트는 사용자가 입력 필드에 값을 입력하거나 변경할 때마다 트리거됨. 
         입력한 값을 실시간으로 감지하면서 추가로 공백 제거 작업을 처리하기 위해서 사용.
