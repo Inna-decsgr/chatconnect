@@ -4,31 +4,43 @@
       <ChatTopBar />
     </div>
     <div class="chat-container p-3" ref="chatContainer">
-      <div v-for="(msg, index) in messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
-      <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
-      8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
-      공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
-      데이터베이스 보면서 이해하면 더 잘될거야. receiver_id가 userid와 같은것만 따로 모아서 왼쪽 정렬하고
-      receiver_id와 userid가 다른것만 모아서 오른쪽 정렬하는거야! 그냥 야매로 생각하자면 현재 로그인된
-      사용자가 sender가 되어서 오른쪽에 보여야하는거잖아. 그러니까 반대로 생각해서 receiver_id와 userid
-      가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
-      미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
-      같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
-        <div class="message-container">
-          <div class="flex">
-            <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
-            <div class="pl-3">
-              <p class="text-[12px] mb-[6px]" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
+      <div v-for="(group, groupIndex) in messages" :key="groupIndex">
+        <!-- 날짜별로 표시-->
+        <p class="bg-gray-800 bg-opacity-5 text-center w-[160px] mx-auto my-3 text-xs py-[6px] rounded-xl text-gray-600">
+          <i class="fa-regular fa-calendar"></i>
+          {{group.date}} {{ group.day }}
+        </p>
+
+        <!--날짜별로 메시지 반복-->
+        <div v-for="minuteGroup in group.groupedMinutes" :key="minuteGroup.minute">
+        <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
+        8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
+        공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
+        데이터베이스 보면서 이해하면 더 잘될거야. receiver_id가 userid와 같은것만 따로 모아서 왼쪽 정렬하고
+        receiver_id와 userid가 다른것만 모아서 오른쪽 정렬하는거야! 그냥 야매로 생각하자면 현재 로그인된
+        사용자가 sender가 되어서 오른쪽에 보여야하는거잖아. 그러니까 반대로 생각해서 receiver_id와 userid
+        가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
+        미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
+        같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
+          <div v-for="(msg, index) in minuteGroup.messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
+            <div class="message-container">
               <div class="flex">
-                <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
-                <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
-                <p class="time">{{ msg.created_at }}</p>
+                <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
+                <div class="pl-3">
+                  <p class="text-[12px] mb-[6px]" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
+                  <div class="flex">
+                    <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
+                    <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
+                    <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
     <div class="flex">
       <input 
         type="text" 
@@ -123,12 +135,61 @@ export default {
     async loadMessages() {
       try {
         const response = await axios.get(`http://localhost:5000/messages/${this.chatId}`);
-        this.messages = response.data.map(msg => {
-          return {
+        console.log('날짜보기', response.data);
+
+        // 날짜별로 메세지 그룹화할 객체
+        const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+        const groupedMessages = {};
+
+        response.data.forEach(msg => {
+          const dateObj = new Date(msg.created_at);
+
+          // 연, 월, 일 추출
+          const year = dateObj.getFullYear();
+          const month = dateObj.getMonth() + 1; // 0부터 시작하므로 +1 필요
+          const day = dateObj.getDate();
+          // 날짜를 2025년 2월 5일 형식으로 조합하기
+          const dateKey = `${year}년 ${month}월 ${day}일`;
+          const dayOfWeek = daysOfWeek[dateObj.getDay()]; // 요일 추출
+
+          // 시간:분 키 생성
+          const minuteKey = chatformatTime(msg.created_at);
+
+          // 날짜 그룹이 없으면 새로 생성
+          if (!groupedMessages[dateKey]) {  // 새로운 날짜일 경우
+            groupedMessages[dateKey] = {
+              day: dayOfWeek,
+              groupedMinutes: {}
+            };            
+          }
+
+          // minuteKey 그룹이 없으면 새로 생성
+          if (!groupedMessages[dateKey].groupedMinutes[minuteKey]) {
+            groupedMessages[dateKey].groupedMinutes[minuteKey] = [];
+          }
+
+          // 있으면 해당 날짜, 분 그룹에 메시지 추가
+          groupedMessages[dateKey].groupedMinutes[minuteKey].push({
             ...msg,
-            created_at: chatformatTime(msg.created_at)  
+            created_at: chatformatTime(msg.created_at)  // 새로운 날짜 키 생성
+          })
+        });
+
+        // 객체를 배열로 변환해서 날짜별 메시지 리스트 생성
+        this.messages = Object.keys(groupedMessages).map(date => {
+          // Object.keys(groupedMessages)를 하게 되면 객체의 키(날짜)민 배열로 추출 가능. map을 사용하면 키(날짜)만 date로 가져올 수 있음. value 값은 해당 배열의 키를 사용해서 값을 다시 가져와야함.
+          return {
+            date,  // 날짜(년-월-일)
+            day: groupedMessages[date].day,
+            groupedMinutes: Object.keys(groupedMessages[date].groupedMinutes).map(minute => {
+              return {
+                minute,
+                messages: groupedMessages[date].groupedMinutes[minute]
+              }
+            })
           };
         });
+        console.log('그룹화', this.messages)
       } catch (error) {
         console.error('메시지 로드 실패:', error)
       }
@@ -150,13 +211,54 @@ export default {
         try {
           const response = await axios.post('http://localhost:5000/messages', messages);
           console.log('보낸 메시지', response.data);
+
+          // 날짜 키와 요일 계산
+          const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+          const dateObj = new Date(response.data.created_at);
+          const year = dateObj.getFullYear();
+          const month = dateObj.getMonth() + 1; // 월은 0부터 시작하므로 +1 필요
+          const day = dateObj.getDate();
+          const dateKey = `${year}년 ${month}월 ${day}일`; // "YYYY년 M월 D일" 형식
+          const dayOfWeek = daysOfWeek[dateObj.getDay()]; // 요일 계산
+
+          // 시간 + 분 키 생성
+          const hour = dateObj.getHours().toString().padStart(2, "0");  // 00~23
+          const minute = dateObj.getMinutes().toString().padStart(2, "0"); // 00~59
+          const minuteKey = `${hour}:${minute}`; // "21:48" 형식
+
+          // 새로운 메세지 포맷
           const formattedMessage = {  
             ...response.data,
             created_at: chatformatTime(response.data.created_at)
+          };
+
+          // 기존 그룹에서 메세지를 추가할 해당 날짜 키를 찾음
+          const groupIndex = this.messages.findIndex(group => group.date === dateKey);
+
+          if (groupIndex !== -1) {
+            // 해당 날짜 그룹이 이미 있으면 그 그룹의 groupedMinutes(시간 그룹) 배열을 groupedMinutes에 저장
+            const groupedMinutes = this.messages[groupIndex].groupedMinutes;
+
+            if (!groupedMinutes[minuteKey]) {
+              // 해당 날짜는 있는데 해당 시간이 없을 경우 새로 생성
+              groupedMinutes[minuteKey] = [];
+            }
+
+            // 있으면
+            groupedMinutes[minuteKey].push(formattedMessage);
+          } else {
+            // 해당 날짜 그룹이 없으면 새 그룹을 생성 후 메세지 추가
+            this.messages.push({
+              date: dateKey,
+              day: dayOfWeek,
+              groupedMinutes: {
+                [minuteKey] : [formattedMessage]
+              }
+            });
           }
-          this.messages.push(formattedMessage);
-          this.newMessage = '';
-          this.$nextTick(() => this.scrollToBottom()) 
+          this.newMessage = '';  // 메세지 보내고 input 비우기
+          this.$nextTick(() => this.scrollToBottom());
+          this.loadMessages()
         } catch (error) {
           console.error('메시지 전송 실패:', error);
           alert("메시지 전송에 실패했습니다.");
