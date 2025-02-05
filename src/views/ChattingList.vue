@@ -56,7 +56,6 @@ export default {
     async getLastMessage() {
       try {
         const response = await axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`);
-        console.log('gg', response.data);
         
         this.groupedMessages = Object.values(
           response.data.reduce((acc, message) => {
@@ -91,6 +90,7 @@ export default {
     async getSearchResult() {
       console.log('검색 키워드', this.searchkeyword);
       const response = await axios.get(`http://localhost:5000/searchuser/${this.searchkeyword}`);
+      console.log('검색 키워드를 포함하는 모든 사용자들', response.data);
       // 검색 결과가 없는 경우 빈 배열 처리
       if (response.data.length === 0) {
         console.log("검색 결과 없음");
@@ -98,35 +98,29 @@ export default {
         return;
       }
 
-      // ID를 기반으로 추가 데이터를 병렬로 가져오기
-      this.searchuserid = await Promise.all(
-        this.searchresult = response.data.map((user) =>
-          axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`, {
-            params: {id: user.id}
-          }).then(res => res.data)
-        )
-      );
+      this.searchresult = response.data.map((user) =>
+        axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`, {
+          params: {id: user.id}
+        }).then(res => res.data)
+      )
 
       if (this.searchresult) {
         // 모든 요청의 결과를 Promise.all로 처리
-        Promise.all(this.searchresult).then((responses) => {  
-          let latestMessage = null;
+        Promise.all(this.searchresult).then((response) => {
+          // 각 Promise 결과의 [0]을 가져와 display_user를 설정
+          this.groupedMessages = response.map((message) => {
+            const lastmessage = message[0];  // 각 Promise의 첫 번째 메세지 저장
 
-          responses.forEach((message) => {
-            // 가장 최근 메세지인지 확인하기
-            console.log('최근 메세지', message[0]);
-            latestMessage = {
-              ...message[0],
+            return {
+              ...lastmessage,
               display_user: {
-                id: message[0].receiver_id,
-                name: message[0].receiver_name,
-                profile_image: message[0].profile_image
+                id: lastmessage.receiver_id,
+                name: lastmessage.receiver_name,
+                profile_image: lastmessage.profile_image
               }
-            };
+            }
           });
 
-          // 검색 최종 결과를 groppedMessages에 저장
-          this.groupedMessages = latestMessage ? [latestMessage] : [];
           console.log('최종 검색 결과', this.groupedMessages);
         });
       } else {
