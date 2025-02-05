@@ -15,6 +15,7 @@
           v-model="password" 
           placeholder="비밀번호"
           class="py-2 px-2 w-full rounded-md text-sm border-1 border-gray-300 outline-none"
+          @keyup.enter="login"
         />
       </div>
 
