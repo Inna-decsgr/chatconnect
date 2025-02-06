@@ -85,7 +85,8 @@ export default {
       console.log(this.showSearchBar);
     },
     close() {
-      this.showSearchBar = false
+      this.showSearchBar = false;
+      this.getLastMessage();
     },
     async getSearchResult() {
       console.log('검색 키워드', this.searchkeyword);
