@@ -12,7 +12,7 @@
         </p>
 
         <!--날짜별로 메시지 반복-->
-        <div v-for="minuteGroup in group.groupedMinutes" :key="minuteGroup.minute">
+        <div v-for="minuteGroup in group.groupedMinutes" :key="minuteGroup.minute" class="mb-2">
         <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
         8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
         공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
@@ -25,13 +25,23 @@
           <div v-for="(msg, index) in minuteGroup.messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
             <div class="message-container">
               <div class="flex">
-                <img v-if="msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
+                <img v-if="msg.sender_id !== user.userid && index === 0" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
                 <div class="pl-3">
-                  <p class="text-[12px] mb-[6px]" v-if="msg.sender_id !== user.userid">{{ msg.sender_name }}</p>
+                  <p class="text-[12px] mb-[3px]" v-if="msg.sender_id !== user.userid && index === 0">{{ msg.sender_name }}</p>
                   <div class="flex">
-                    <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver']">{{ msg.text }}</p>
-                    <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator">1</p>
-                    <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                    <!-- receiver일 때는 text가 먼저오도록 -->
+                    <div v-if="msg.sender_id !== user.userid" class="flex">
+                      <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '', index !== 0 ? 'ml-[39px]' : '']">{{ msg.text }}</p>
+                      <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                    </div>
+                    <!-- sender일 때는 info-wrapper가 앞에 오도록 설정 -->
+                    <div v-if="msg.sender_id === user.userid" class="flex">
+                      <div class="info-wrapper">
+                        <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator" :class="index !== minuteGroup.messages.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                        <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                      </div>
+                      <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -319,7 +329,7 @@ export default {
 .receiver-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;  /* 메세지 왼쪽 정렬*/ 
+  position: relative;
 }
 
 .message-container {
@@ -327,47 +337,42 @@ export default {
   flex-direction: row;
   align-items: flex-end;  /* 시간이랑 말풍선 수직 정렬 */
   max-width: 70%;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .sender {
   background-color: #f7e330; 
   border-radius: 4px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  padding-left: 10px;
-  padding-right: 10px;
-  margin-left: 55px;
+  padding: 6px 10px;
   font-size: 12px;
+  position: relative;
 }
 
 
 .receiver {
   background-color: white;
   border-radius: 4px;
-  padding-top: 6px;
-  padding-bottom: 6px;
-  padding-left: 10px;
-  padding-right: 10px;
+  padding: 6px 10px;
   position: relative;
   margin-right: 7px; 
   font-size: 12px;
 }
 
-.message-wrapper .time {
-  align-content: flex-end;
+.info-wrapper {
+  width: 50px;
+  margin-right: 2px;
 }
 
 .receiver-wrapper .time {
   color: #555555;
-  flex-shrink: 0;
   font-size: 11px;
+  padding-top: 14px;
 }
 .sender-wrapper .time {
-  position: absolute;
   color: #555555;
   flex-shrink: 0;
-  align-self: flex-end;
+  position: absolute;
+  bottom: 5px;
   font-size: 11px;
 }
 
@@ -376,19 +381,21 @@ export default {
 .sender-wrapper .unread-indicator {
   font-size: 11px;
   color: #f7e330;
-  position: absolute;
-  margin-left: 40px;
+  text-align: right;
+  padding-right: 3px;
+  margin-bottom: -2px;
 }
 
-.sender::after,
-.receiver::after {
+
+.sender.has-tail::after,
+.receiver.has-tail::after {
   content: '';
   position: absolute;
   width: 0;
   height: 0;
 }
 
-.sender::after {
+.sender.has-tail::after {
   border-left: 13px solid #f7e330;
   border-top: 2px solid transparent;
   border-bottom: 10px solid transparent;
@@ -396,7 +403,7 @@ export default {
   top: 8px;
 }
 
-.receiver::after {
+.receiver.has-tail::after {
   border-right: 13px solid white;
   border-top: 2px solid transparent;
   border-bottom: 10px solid transparent;
