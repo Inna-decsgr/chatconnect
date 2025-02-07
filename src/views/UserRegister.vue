@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-screen">
+  <div class="flex flex-col h-screen bg-white">
     <div class="flex flex-col w-[450px] h-[600px] mx-auto my-auto">
       <p class="text-lg font-bold text-center pb-4">회원가입</p>
       <div>

@@ -1,6 +1,6 @@
 <template>
   <div v-if="user">
-    <div class="h-screen">
+    <div class="h-screen bg-white">
       <div>
         <div class="flex items-center justify-between pt-3 pb-2">
           <p class="text-lg font-bold pl-5">친구</p>
@@ -54,5 +54,9 @@ export default {
 }
 .router-link-active {
   font-weight: bold;
+}
+
+body {
+  overflow: hidden;
 }
 </style>

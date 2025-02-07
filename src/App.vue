@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen">
+  <div class="flex h-screen bg-[#F7E330]">
     <div v-if="user" class="w-[70px] bg-gray-100 border-r">
       <MainBar />
     </div>
