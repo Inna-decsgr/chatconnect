@@ -20,7 +20,7 @@ export default {
   computed: {
     ...mapState(['users', 'user']),   
     filteredUsers() {
-      return this.users.filter(user => user.username !== this.user.username);
+      return this.users.filter(user => user.id !== this.user.id);
     }
   },
   props: {
