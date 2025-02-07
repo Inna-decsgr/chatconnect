@@ -22,12 +22,12 @@
     </div>
 
     <!--사용자 프로필 수정 팝업-->
-    <div v-if="isShowSetting" class="fixed top-[20%] left-1/2 transform -translate-x-1/2 flex flex-col justify-center items-center">
-      <div class="w-[400px] h-[500px] bg-white py-5 px-10 border rounded-md shadow-lg text-center">
-        <div class="flex justify-between w-full mb-5">
+    <div v-if="isShowSetting" class="fixed top-[10%] left-1/2 transform -translate-x-1/2 flex flex-col justify-center items-center">
+      <div class="w-[400px] h-[500px] bg-white py-5 px-10 rounded-md shadow-lg text-center">
+        <div class="flex justify-between items-center w-full mb-5">
           <p class="font-bold">기본프로필 편집</p>
-          <button @click="close">
-            <i class="fa-solid fa-x"></i>
+          <button @click="close" class="absolute top-4 right-6">
+            <i class="fa-solid fa-x text-xs text-gray-500"></i>
           </button>
         </div>
         <div>
@@ -35,10 +35,10 @@
             <img 
               :src="previewImage || (user.profile_image ? `http://localhost:5000${user.profile_image}` : '/images/사용자 프로필.png')" 
               alt="프로필 이미지" 
-              class="relative w-full h-full object-cover rounded-3xl" 
+              class="relative w-full h-full object-cover rounded-[38px]" 
             />
-            <button @click="triggerFileInput" class="absolute bottom-[-5px] right-[-5px] border bg-gray-50 rounded-full flex justify-center items-center w-[25px] h-[25px]">
-              <i class="fa-solid fa-camera text-xs"></i>
+            <button @click="triggerFileInput" class="absolute bottom-[-2px] right-[-3px] border bg-gray-50 rounded-full flex justify-center items-center py-[4px] px-[4px]">
+              <i class="fa-solid fa-camera"></i>
             </button>
             <input
               ref="fileInput"
@@ -50,28 +50,33 @@
           </div>
         </div>
 
-        <div class="mt-3">
+        <div class="relative mt-3">
           <input 
             id="username"
             type="text"
             v-model="editedUsername"
-            class="w-[300px] border-b border-black p-2 outline-none"
+            class="w-[300px] border-b border-black p-2 outline-none text-xs"
           />
+          <p class="absolute right-[10px] top-1/2 -translate-y-1/2 text-xs text-gray-500 ">{{ editedUsername.length}} / 20</p>
         </div>
 
-        <div class="mt-3">
+        <div class="relative mt-3">
           <input 
             id="profile_message"
             type="text"
             v-model="editedProfileMessage"
             placeholder="상태 메시지"
-            class="w-[300px] border-b border-black p-2 outline-none"
+            class="relative w-[300px] border-b border-black p-2 outline-none text-xs"
           />
+          <p class="absolute right-[10px] top-1/2 -translate-y-1/3 text-xs text-gray-500 ">{{ editedProfileMessage.length}} / 60</p>
         </div>
 
-        <div class="mt-5">
-          <button @click="saveProfile" class="border py-2 px-3 rounded-lg font-bold hover:bg-gray-50">
-            저장
+        <div class="userpopup flex justify-end gap-1 mt-5">
+          <button :disabled="user.username.trim() === editedUsername.trim()" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
+            확인
+          </button>
+          <button @click="close" class="border py-2 px-3 rounded-md font-bold text-xs hover:bg-gray-50">
+            취소
           </button>
         </div>
       </div>
@@ -200,3 +205,11 @@ export default {
   }
 }
 </script>
+
+<style>
+.userpopup button:disabled {
+  background-color: #e5e5e5; /* 비활성화된 배경 */
+  cursor: not-allowed; /* 비활성화된 커서 */
+  color: #999; /* 흐린 텍스트 */
+}
+</style>
