@@ -1,13 +1,13 @@
 <template>
   <div>
-    <div class="pt-3 pb-2 w-[100%]">
+    <div class="pt-3 pb-2 w-[100%] h-screen bg-white">
       <div class="flex justify-between items-center">
         <p class="text-lg font-bold pl-5 pb-3">채팅 <i class="fa-solid fa-caret-down"></i></p>
         <button @click="showSearch">
           <i class="fa-solid fa-magnifying-glass text-lg pr-5 pb-2"></i>
         </button>
       </div>
-      <div v-if="showSearchBar" class="flex items-center pl-4 pb-3">
+      <div v-if="showSearchBar" class="chattinglist flex items-center pl-4 pb-3">
         <input 
           type="text"
           v-model="searchkeyword"
@@ -134,17 +134,17 @@ export default {
 
 
 <style>
-input {
+.chattinglist input {
   border: 1px solid #efefef;
 }
 
-input:focus {
+.chattinglist input:focus {
   background-color: white;
   outline: none;
   border: 1px solid rgb(187, 185, 185);
 }
 
-input:focus::placeholder {
+.chattinglist input:focus::placeholder {
   color: transparent;
 }
 </style>
