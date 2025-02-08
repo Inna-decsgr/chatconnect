@@ -136,7 +136,7 @@ def update_profile(userid):
         # 사용자 데이터 업데이트
         if username:
             user.username = username
-        if profile_message:
+        if profile_message is not None:
             user.profile_message = profile_message
 
         # 프로필 이미지 처리
