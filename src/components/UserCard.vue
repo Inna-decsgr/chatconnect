@@ -72,9 +72,10 @@
         </div>
 
         <div class="userpopup flex justify-end gap-1 mt-5">
-          <button :disabled="user.username.trim() === editedUsername.trim()" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
+          <button :disabled="!(user.username.trim() !== editedUsername.trim() || user.profile_message.trim() !== editedProfileMessage.trim())" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
             확인
           </button>
+
           <button @click="close" class="border py-2 px-3 rounded-md font-bold text-xs hover:bg-gray-50">
             취소
           </button>
@@ -167,7 +168,7 @@ export default {
       // 수정된 데이터를 서버로 전송
       const formData = new FormData();
       formData.append("username", this.editedUsername);
-      formData.append("profile_message", this.editedProfileMessage);
+      formData.append("profile_message", this.editedProfileMessage.trim() || "");
       if (this.uploadedImage) {
         formData.append("profile_image", this.uploadedImage);
       }
