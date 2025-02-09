@@ -37,9 +37,13 @@
               alt="프로필 이미지" 
               class="relative w-full h-full object-cover rounded-[38px]" 
             />
-            <button @click="triggerFileInput" class="absolute bottom-[-2px] right-[-3px] border bg-gray-50 rounded-full flex justify-center items-center py-[4px] px-[4px]">
+            <button @click.stop="toggleChangeImage" class="absolute bottom-[-2px] right-[-3px] border bg-gray-50 rounded-full flex justify-center items-center py-[4px] px-[4px]">
               <i class="fa-solid fa-camera"></i>
             </button>
+            <div v-if="isChangeImage" ref="imagePopup" @click.stop class="absolute top-[100px] left-[140px] transform -translate-x-1/2 mt-10 bg-white w-[130px] z-50 text-xs mx-2 my-1 border rounded-sm py-1">
+              <button @click="triggerFileInput" class="w-full py-1 px-2 hover:bg-gray-100">사진 변경</button>
+              <button class="w-full py-1 px-2 hover:bg-gray-100">기본 이미지로 변경</button>
+            </div>
             <input
               ref="fileInput"
               type="file" 
@@ -72,7 +76,7 @@
         </div>
 
         <div class="userpopup flex justify-end gap-1 mt-5">
-          <button :disabled="!(user.username.trim() !== editedUsername.trim() || user.profile_message.trim() !== editedProfileMessage.trim())" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
+          <button :disabled="!(user.username.trim() !== editedUsername.trim() || user.profile_message.trim() !== editedProfileMessage.trim() || user.profile_image !== previewImage)" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
             확인
           </button>
 
@@ -87,6 +91,7 @@
 
 <script>
 import axios from 'axios';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 export default {
   data() {
@@ -96,6 +101,37 @@ export default {
       editedProfileMessage: "", // 상태 메시지 초기값
       previewImage: null, // 업로드한 이미지 미리보기
       uploadedImage: null, // 실제 업로드할 이미지 파일
+    }
+  },
+  setup() {
+    const isChangeImage = ref(false);
+    const imagePopup = ref(null);
+
+    // 토글 기능
+    const toggleChangeImage = () => {
+      isChangeImage.value = !isChangeImage.value;
+    };
+
+    // 외부 클릭 감지 함수
+    const handleClickOutside = (event) => {
+      if (imagePopup.value && !imagePopup.value.contains(event.target)) {
+        isChangeImage.value = false; // 팝업 닫기
+      }
+    };
+
+    // 이벤트 리스너 추가 & 제거
+    onMounted(() => {
+      window.addEventListener("click", handleClickOutside);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener("click", handleClickOutside);
+    });
+
+    return {
+      isChangeImage,
+      imagePopup,
+      toggleChangeImage
     }
   },
   props: {
@@ -176,6 +212,7 @@ export default {
       console.log("FormData 확인:", formData.get("profile_image")); // 파일 데이터 확인
 
       const response = await axios.post(`http://localhost:5000/updateprofile/${this.user.userid}`, formData);
+      console.log('요청 결과', response.data);
 
       // 업데이트 된 데이터를 다시 가져와서 vuex 상태 업데이트하기
       this.$store.dispatch('fetchUserData');
