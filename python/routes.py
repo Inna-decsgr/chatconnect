@@ -154,6 +154,12 @@ def update_profile(userid):
 
             # 이미지 경로 업데이트
             user.profile_image = f"/uploads/{filename}"
+        elif profile_image is None:  # profile_image가 None이면 기존 이미지 삭제 후 null 처리
+            if user.profile_image:
+                old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(user.profile_image))
+                if os.path.exists(old_image_path):
+                    os.remove(old_image_path)
+            user.profile_image = None
 
         # 데이터베이스 업데이트
         db.session.commit()
