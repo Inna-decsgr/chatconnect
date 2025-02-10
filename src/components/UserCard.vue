@@ -42,7 +42,7 @@
             </button>
             <div v-if="isChangeImage" ref="imagePopup" @click.stop class="absolute top-[100px] left-[140px] transform -translate-x-1/2 mt-10 bg-white w-[130px] z-50 text-xs mx-2 my-1 border rounded-sm py-1">
               <button @click="triggerFileInput" class="w-full py-1 px-2 hover:bg-gray-100">사진 변경</button>
-              <button class="w-full py-1 px-2 hover:bg-gray-100">기본 이미지로 변경</button>
+              <button @click="setdefaultimage" class="w-full py-1 px-2 hover:bg-gray-100">기본 이미지로 변경</button>
             </div>
             <input
               ref="fileInput"
@@ -209,8 +209,6 @@ export default {
         formData.append("profile_image", this.uploadedImage);
       }
 
-      console.log("FormData 확인:", formData.get("profile_image")); // 파일 데이터 확인
-
       const response = await axios.post(`http://localhost:5000/updateprofile/${this.user.userid}`, formData);
       console.log('요청 결과', response.data);
 
@@ -239,6 +237,10 @@ export default {
       });
       this.$store.commit('removeFavoriteUser', friend.user_id)
       console.log('즐겨찾기 해제', response.data);
+    },
+    setdefaultimage() {
+      this.uploadedImage = null;
+      this.saveProfile();
     }
   }
 }
