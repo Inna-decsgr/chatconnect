@@ -76,7 +76,7 @@
         </div>
 
         <div class="userpopup flex justify-end gap-1 mt-5">
-          <button :disabled="!(user.username.trim() !== editedUsername.trim() || user.profile_message.trim() !== editedProfileMessage.trim() || uploadedImage)" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
+          <button :disabled="!(user.username.trim() !== editedUsername.trim() || (user.profile_message?.trim() ?? '' ) !== editedProfileMessage.trim() || uploadedImage)" @click="saveProfile" class="py-2 px-3 rounded-md font-bold text-xs bg-[#f7e330]">
             확인
           </button>
           <button @click="close" class="border py-2 px-3 rounded-md font-bold text-xs hover:bg-gray-50">
@@ -240,6 +240,7 @@ export default {
     },
     setdefaultimage() {
       this.uploadedImage = null;
+      this.previewImage = null;
       this.saveProfile();
     }
   }
