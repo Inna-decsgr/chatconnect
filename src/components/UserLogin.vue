@@ -12,6 +12,7 @@
       <div class="mb-3 w-[300px]">
         <input 
           id="password"
+          type="password"
           v-model="password" 
           placeholder="비밀번호"
           class="py-2 px-2 w-full rounded-md text-sm border-1 border-gray-300 outline-none"
