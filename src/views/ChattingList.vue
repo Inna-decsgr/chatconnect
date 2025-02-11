@@ -4,18 +4,18 @@
       <div class="flex justify-between items-center">
         <p class="text-lg font-bold pl-5 pb-3">채팅 <i class="fa-solid fa-caret-down"></i></p>
         <button @click="showSearch">
-          <i class="fa-solid fa-magnifying-glass text-lg pr-5 pb-2"></i>
+          <i class="fa-solid fa-magnifying-glass text-lg pr-6 pb-2"></i>
         </button>
       </div>
       <div v-if="showSearchBar" class="chattinglist flex items-center pl-4 pb-3">
         <input 
           type="text"
           v-model="searchkeyword"
-          class="py-2 px-3 rounded-2xl bg-[#efefef] text-sm w-[90%] "
+          class="py-2 px-3 rounded-2xl bg-[#efefef] text-sm w-[96%]"
           placeholder="채팅방, 참여자 검색"
           @keyup.enter="getSearchResult"
         >
-        <button class="w-[10%] pr-3" @click="close">
+        <button class="w-[4%] pr-3" @click="close">
           <i class="fa-solid fa-x text-sm text-gray-500 pl-3 cursor-pointer"></i>
         </button>
       </div>
@@ -99,7 +99,9 @@ export default {
         return;
       }
 
-      this.searchresult = response.data.map((user) =>
+      const filteredUsers = response.data.filter(user => user.id !== this.user.userid);
+
+      this.searchresult = filteredUsers.map((user) =>
         axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`, {
           params: {id: user.id}
         }).then(res => res.data)
