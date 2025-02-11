@@ -78,6 +78,13 @@
           class="py-2 px-2 w-[280px] rounded-md text-sm border-1 border-gray-300 outline-none mb-2"
         />
       </div>
+      <div v-if="successRegister" class="absolute top-1/2 left-1/2 z-20 bg-white w-[300px] h-[150px] rounded-sm border text-center transform -translate-x-1/2 -translate-y-3/4 shadow-lg py-4">
+        <p class="text-sm font-bold pt-2">
+          회원가입이 성공적으로 완료되었습니다.<br/>
+          안녕하세요 {{ username && username }}님!
+        </p>
+        <button @click="home" class="text-sm font-bold mt-3 bg-gray-100 py-1 px-2 rounded-sm">확인</button>
+      </div>
       <div class="flex mx-auto gap-2 mt-8">
         <button @click="home" class="block w-[200px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">홈</button>
         <button @click="register" class="block w-[200px] bg-gray-100 py-2 px-3 rounded-md hover:bg-gray-200 font-bold text-sm">회원가입</button>
@@ -99,6 +106,7 @@ export default {
       phonenumber: '',
       profileImage: null, // Base64 대신 파일 객체 저장
       previewImage: "/images/사용자 프로필.png", // 미리보기용 기본 이미지
+      successRegister: false
     };
   },
   methods: {
@@ -141,7 +149,7 @@ export default {
 
         await this.$store.dispatch('fetchUserData');
 
-        this.$router.push('/');
+        this.successRegister = true;
       } catch (error) {
         console.error(error.response ? error.response.data : error);
       }
