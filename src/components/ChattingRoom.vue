@@ -10,7 +10,6 @@
           <i class="fa-regular fa-calendar"></i>
           {{group.date}} {{ group.day }}
         </p>
-
         <!--날짜별로 메시지 반복-->
         <div v-for="minuteGroup in group.groupedMinutes" :key="minuteGroup.minute" class="mb-2">
         <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
@@ -22,7 +21,7 @@
         가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
         미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
         같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
-          <div v-for="(msg, index) in minuteGroup.messages" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
+          <div v-for="(msg, index) in minuteGroup" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
             <div class="message-container">
               <div class="flex">
                 <img v-if="msg.sender_id !== user.userid && index === 0" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
@@ -32,13 +31,13 @@
                     <!-- receiver일 때는 text가 먼저오도록 -->
                     <div v-if="msg.sender_id !== user.userid" class="flex">
                       <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '', index !== 0 ? 'ml-[39px]' : '']">{{ msg.text }}</p>
-                      <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                      <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
                     </div>
                     <!-- sender일 때는 info-wrapper가 앞에 오도록 설정 -->
                     <div v-if="msg.sender_id === user.userid" class="flex">
                       <div class="info-wrapper">
-                        <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator" :class="index !== minuteGroup.messages.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
-                        <p v-if="index === minuteGroup.messages.length - 1" class="time">{{ msg.created_at }}</p>
+                        <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                        <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
                       </div>
                       <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
                     </div>
@@ -80,6 +79,7 @@ import { mapState } from 'vuex'
 import { v4 as uuidv4 } from 'uuid';
 import { chatformatTime } from '@/utils/chatformatTime';
 import ChatTopBar from './ChatTopBar.vue';
+import socket from "../utils/socket";
 
 export default {
   components: {
@@ -96,7 +96,24 @@ export default {
     this.loadUserandMessages();
   },
   mounted() {
-    this.loadUserandMessages();
+    console.log("🚀 Vue에서 `socket.on(load_messages)` 리스너 설정 중...");
+    socket.on("new_message", (data) => {
+      console.log("📩 서버에서 받은 실시간 메시지:", data);
+      console.log("🚀 새 메시지가 감지됨! `get_messages` 실행");
+      socket.emit("get_messages", { chat_id: this.chatId });
+    })
+
+    // ✅ 서버에서 채팅 내역 수신
+    socket.on("get_message", (data) => {
+      console.log('채팅 아이디', this.chatId);
+      console.log("📩 서버에서 받은 채팅 내역:", data);
+      if (!data || data.length === 0) {
+        console.error("❌ 메시지 데이터가 없음!", data);
+        return;
+      }
+      this.messages = [];
+      data.forEach(msg => this.addMessageToChat(msg));
+    });
   },
   updated() {
     this.scrollToBottom();
@@ -124,7 +141,7 @@ export default {
 
       if (this.user && this.user.userid) {
         this.chatId = this.getChatId();
-        this.loadMessages();
+        socket.emit("get_messages", { chat_id: this.chatId }); // ✅ 서버에 메시지 요청
       } else {
         console.error('User is not defined or userid is missing');
       }
@@ -142,146 +159,105 @@ export default {
       }
       return chatId;
     },
-    async loadMessages() {
-      try {
-        const response = await axios.get(`http://localhost:5000/messages/${this.chatId}`);
-        console.log('날짜보기', response.data);
-
-        // 날짜별로 메세지 그룹화할 객체
-        const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-        const groupedMessages = {};
-
-        response.data.forEach(msg => {
-          const dateObj = new Date(msg.created_at);
-
-          // 연, 월, 일 추출
-          const year = dateObj.getFullYear();
-          const month = dateObj.getMonth() + 1; // 0부터 시작하므로 +1 필요
-          const day = dateObj.getDate();
-          // 날짜를 2025년 2월 5일 형식으로 조합하기
-          const dateKey = `${year}년 ${month}월 ${day}일`;
-          const dayOfWeek = daysOfWeek[dateObj.getDay()]; // 요일 추출
-
-          // 시간:분 키 생성
-          const minuteKey = chatformatTime(msg.created_at);
-
-          // 날짜 그룹이 없으면 새로 생성
-          if (!groupedMessages[dateKey]) {  // 새로운 날짜일 경우
-            groupedMessages[dateKey] = {
-              day: dayOfWeek,
-              groupedMinutes: {}
-            };            
-          }
-
-          // minuteKey 그룹이 없으면 새로 생성
-          if (!groupedMessages[dateKey].groupedMinutes[minuteKey]) {
-            groupedMessages[dateKey].groupedMinutes[minuteKey] = [];
-          }
-
-          // 있으면 해당 날짜, 분 그룹에 메시지 추가
-          groupedMessages[dateKey].groupedMinutes[minuteKey].push({
-            ...msg,
-            created_at: chatformatTime(msg.created_at)  // 새로운 날짜 키 생성
-          })
-        });
-
-        // 객체를 배열로 변환해서 날짜별 메시지 리스트 생성
-        this.messages = Object.keys(groupedMessages).map(date => {
-          // Object.keys(groupedMessages)를 하게 되면 객체의 키(날짜)민 배열로 추출 가능. map을 사용하면 키(날짜)만 date로 가져올 수 있음. value 값은 해당 배열의 키를 사용해서 값을 다시 가져와야함.
-          return {
-            date,  // 날짜(년-월-일)
-            day: groupedMessages[date].day,
-            groupedMinutes: Object.keys(groupedMessages[date].groupedMinutes).map(minute => {
-              return {
-                minute,
-                messages: groupedMessages[date].groupedMinutes[minute]
-              }
-            })
-          };
-        });
-        console.log('그룹화', this.messages)
-      } catch (error) {
-        console.error('메시지 로드 실패:', error)
+    scrollToBottom() {
+      const container = this.$refs.chatContainer;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
       }
     },
-    async sendmessage() {
+    sendmessage() {
       if (this.newMessage.trim()) {
-        const timestamp = new Date().toISOString();  
-        const messages = {
+        const timestamp = new Date().toISOString();
+        const tempId = `temp-${Date.now()}`;
+
+        const message = {
+          id: tempId,
           chat_id: this.chatId,
           sender_id: this.user.userid,
           sender_name: this.user.username,
           receiver_id: this.friendId,
           receiver_name: this.friendName,
           text: this.newMessage,
-          timestamp
+          created_at: timestamp
         };
-        console.log('메세지 정보', messages);
 
-        try {
-          const response = await axios.post('http://localhost:5000/messages', messages);
-          console.log('보낸 메시지', response.data);
+        console.log('보낼 메세지', message);
 
-          // 날짜 키와 요일 계산
-          const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-          const dateObj = new Date(response.data.created_at);
-          const year = dateObj.getFullYear();
-          const month = dateObj.getMonth() + 1; // 월은 0부터 시작하므로 +1 필요
-          const day = dateObj.getDate();
-          const dateKey = `${year}년 ${month}월 ${day}일`; // "YYYY년 M월 D일" 형식
-          const dayOfWeek = daysOfWeek[dateObj.getDay()]; // 요일 계산
+         // ✅ 내가 보낸 메시지를 화면에 즉시 추가
+        this.addMessageToChat(message);
 
-          // 시간 + 분 키 생성
-          const hour = dateObj.getHours().toString().padStart(2, "0");  // 00~23
-          const minute = dateObj.getMinutes().toString().padStart(2, "0"); // 00~59
-          const minuteKey = `${hour}:${minute}`; // "21:48" 형식
-
-          // 새로운 메세지 포맷
-          const formattedMessage = {  
-            ...response.data,
-            created_at: chatformatTime(response.data.created_at)
-          };
-
-          // 기존 그룹에서 메세지를 추가할 해당 날짜 키를 찾음
-          const groupIndex = this.messages.findIndex(group => group.date === dateKey);
-
-          if (groupIndex !== -1) {
-            // 해당 날짜 그룹이 이미 있으면 그 그룹의 groupedMinutes(시간 그룹) 배열을 groupedMinutes에 저장
-            const groupedMinutes = this.messages[groupIndex].groupedMinutes;
-
-            if (!groupedMinutes[minuteKey]) {
-              // 해당 날짜는 있는데 해당 시간이 없을 경우 새로 생성
-              groupedMinutes[minuteKey] = [];
-            }
-
-            // 있으면
-            groupedMinutes[minuteKey].push(formattedMessage);
-          } else {
-            // 해당 날짜 그룹이 없으면 새 그룹을 생성 후 메세지 추가
-            this.messages.push({
-              date: dateKey,
-              day: dayOfWeek,
-              groupedMinutes: {
-                [minuteKey] : [formattedMessage]
-              }
-            });
-          }
-          this.newMessage = '';  // 메세지 보내고 input 비우기
-          this.$nextTick(() => this.scrollToBottom());
-          this.loadMessages()
-        } catch (error) {
-          console.error('메시지 전송 실패:', error);
-          alert("메시지 전송에 실패했습니다.");
-        }
-      } else {
-        alert('메시지를 입력하세요')
+         // ✅ 서버에 메시지 전송
+        socket.emit("message", message);
+        socket.emit("get_messages", { chat_id: this.chatId });
+          
+        this.newMessage = '';  // 메세지 보내고 input 비우기
       }
     },
-    scrollToBottom() {
-      const container = this.$refs.chatContainer;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
+    addMessageToChat(data) {
+      console.log("📩 받은 메시지를 추가 중:", data);
+
+      // 날짜 키와 요일 계산
+      const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+      const dateObj = new Date(data.created_at);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth() + 1;
+      const day = dateObj.getDate();
+      const dateKey = `${year}년 ${month}월 ${day}일`;
+      const dayOfWeek = daysOfWeek[dateObj.getDay()];
+
+      // 시간 + 분 키 생성
+      const hour = dateObj.getHours().toString().padStart(2, "0");
+      const minute = dateObj.getMinutes().toString().padStart(2, "0");
+      const minuteKey = `${hour}:${minute}`;
+
+      // 새로운 메시지 포맷
+      const formattedMessage = {
+        ...data,
+        created_at: chatformatTime(data.created_at)
+      };
+      
+      // 기존 그룹에서 메시지를 추가할 해당 날짜 키를 찾음
+      const groupIndex = this.messages.findIndex(group => group.date === dateKey);
+
+      if (groupIndex !== -1) {
+        // 해당 날짜 그룹이 이미 있으면 그 그룹의 groupedMinutes(시간 그룹) 배열을 groupedMinutes에 저장
+        const groupedMinutes = this.messages[groupIndex].groupedMinutes;
+
+        if (!groupedMinutes[minuteKey]) {
+          // 해당 날짜는 있는데 해당 시간이 없을 경우 새로 생성
+          groupedMinutes[minuteKey] = [];
+        }
+
+        // 있으면
+        groupedMinutes[minuteKey].push(formattedMessage);
+      } else {
+        // 해당 날짜 그룹이 없으면 새 그룹을 생성 후 메세지 추가
+        this.messages.push({
+          date: dateKey,
+          day: dayOfWeek,
+          groupedMinutes: {
+            [minuteKey]: [formattedMessage]
+          }
+        });
       }
+      this.$nextTick(() => this.scrollToBottom());  // 스크롤 자동 이동
+    },
+    updateMessageInChat(data) {
+      console.log("📩 서버에서 받은 메시지를 기존 메시지와 비교하여 업데이트:", data);
+
+      for (let group of this.messages) {
+        for (let minuteKey in group.groupedMinutes) {
+          let minuteGroup = group.groupedMinutes[minuteKey];
+          const index = minuteGroup.findIndex(msg => msg.id === `temp-${data.created_at}`);
+
+          if (index !== -1) {
+            minuteGroup[index] = data; // 서버에서 받은 데이터로 업데이트
+            return;
+          }
+        }
+      }
+      
+      this.addMessageToChat(data);
     },
     async setIsReadTrue(chatid) {
       try {
