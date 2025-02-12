@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
 
 load_dotenv() 
 
@@ -20,5 +21,10 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)  
 jwt = JWTManager(app) 
 
+# 🔥 Flask-SocketIO 설정
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-from python import routes 
+
+
+# 📌 `routes.py`에서 `app`을 가져올 것이므로, import는 맨 아래에서 실행!
+from python import routes
