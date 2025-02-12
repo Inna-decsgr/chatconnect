@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from flask import send_from_directory
 import os
 from sqlalchemy import case
+from python import socketio
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 현재 파일이 위치한 디렉토리 가져옴
@@ -195,12 +196,13 @@ def get_users():
     
 
 
-# 메세지 보내기
-messages = []
-@app.route('/messages', methods=['POST'])
-def add_message():
+
+# 💬 메시지 처리 이벤트
+@socketio.on('message')
+def new_message(data):
+    print(f"Received message: {data}")
+
     try :
-        data = request.json
         chat_id = data['chat_id']
         sender_id = data['sender_id']
         sender_name = data['sender_name']
@@ -233,12 +235,64 @@ def add_message():
         db.session.add(new_message)
         db.session.commit()
 
-        return jsonify(new_message.to_dict()), 201
+        print(f"🚀 서버에서 모든 클라이언트에게 메시지 전송: {new_message.to_dict()}")
+        socketio.emit("new_message", new_message.to_dict(), to=chat_id) 
+        print(f"메세지 전송 완료")
     
     except Exception as e:
         print(f"Error adding message: {e}")
         return jsonify({'message': 'Failed to add message'}), 500
     
+
+
+
+
+# 특정 채팅방의 메시지 읽어오기
+@socketio.on('get_messages')
+def get_message(data):
+    chat_id = data.get('chat_id')
+    print(f"📩 채팅 내역 요청: chat_id={chat_id}")
+
+    try:
+        # Messages와 User 테이블 조인해서 receiver의 profile_image 가져오기
+        messages = db.session.query(
+            Messages,
+            User.profile_image.label("receiver_profile_image") # 조인된 User 테이블의 profile_image를 receiver_profile_image라는 별칭으로 반환함
+            # receiver_profile_image는 실제 데이터베이스에 존재하는 필드는 아니지만 SQLAlchemy가 반환 데이터를 다룰 때 임의로 지정된 이름을 사용하기 때문에 결과 반환할 때 사용할 수 있음
+            # 여기서!! 조인 조건은 sender_id로 했는데 실제 가져오는 건 receiver의 프로필 이미지를 가져오게 보이는 이유는 쿼리의 다른 부분에서 조인 조건과 반환 데이터 정의가 정확히 설정되었기 때문이다.
+            # label은 반환 데이터에 이름만 붙일 뿐 실제로 가져오는 데이터는 조인 조건에 따라 결정되므로 이부분에서 반환되는 데이터는 보낸 사람의 profile_image이다
+
+        ).join(
+            # Messages.sender_id와 User.user_id를 기준으로 조인
+            # Messages 테이블의 각 행에 대해 메시지를 보낸 사람과 일치하는 정보(sender_id와 일치하는 사용자의 정보)를 User 테이블로 부터 가져와서 조인 결과에 추가함
+            # 실제 조인 쿼리 결과에는 모든 데이터(Messages 테이블 데이터와 조인된 User 데이터. 즉 sender_id로 조인하나 receiver_id로 조인하나에 상관없이 Message와 관련된 receiver_id, sender_id 정보가 모두)가 포함되어 있다.
+            # 따라서 메시지의 상대방 정보는 이미 조인된 결과에 포함되어있으므로 조인을 통해 보낸 사람의 정보를 가져왔지만 각 메시지에서 대해 상대방의 정보도 추론할 수 있는 상태가 되게 된다.
+            # 즉, Messages.sender_id를 기준으로 User 테이블과 조인하지만 결과적으로는 메시지의 상대방(receiver) 정보를 추론할 수 있는 상태가 되는 것
+            # 결과적으로 조인된 결과에는 sender_id 즉, 보낸 사람의 정보가 포함되게 된다.
+            User, Messages.sender_id == User.user_id
+        ).filter(
+            # Messages 테이블에서 요청된 chat_id에 해당하는 메시지만 필터링함
+            Messages.chat_id == chat_id 
+        ).order_by(Messages.created_at.asc()).all() # 메시지는 created_at을 기준으로 오래된 순서로 정렬됨
+
+        # 메시지 반환
+        result = [
+            {
+                **msg.to_dict(),
+                "receiver_profile_image": receiver_profile_image
+            }
+            for msg, receiver_profile_image in messages
+        ]
+
+        print(f"🚀 서버에서 get_messages emit 실행 중 (chat_id={chat_id})")
+        socketio.emit('get_message', result)
+        print(f"get_message 실행 완료")
+
+    except Exception as e:
+        print(f"🚨 메시지 불러오기 오류: {e}")
+
+
+
 
 # 특정 채팅방의 메시지 읽어오기
 @app.route('/messages/<chat_id>', methods=['GET'])
@@ -279,7 +333,6 @@ def get_message(chat_id):
     except Exception as e:
         print(f"Error fetching messages: {e}")
         return jsonify({'message:' 'Failed to fetch messages'}), 500
-
 
 # 대화목록에서 보여줄 마지막 메세지와 대화방에 대한 정보 가져오기
 @app.route('/lastmessage/<user_id>', methods=['GET'])
