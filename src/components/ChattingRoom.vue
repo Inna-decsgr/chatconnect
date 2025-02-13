@@ -259,6 +259,11 @@ export default {
       
       this.addMessageToChat(data);
     },
+    async unreadmessages() {
+      if (!this.user || !this.user.userid) return;
+      socket.emit("get_unread_message", { user_id: this.user.userid });
+      // 클라이언트에서 서버에 "나 안 읽은 메세지 개수 좀 알려주라"라고 emit으로 요청을 보내게 되고 서버의 @socketio.on("get_unread_message")라우트가 실행됨. get_unread_message 라우트 내에서 안 읽은 메시지를 조회 후 다시 emit("get_unread_message", result)를 실행하게 되면 다시 클라이언트에서(MainBar)의 socket.on("get_unread_message")가 자동 실행되면서 수신함
+    },
     async setIsReadTrue(chatid) {
       try {
         // this.chatId랑 this.userid
@@ -267,6 +272,9 @@ export default {
           userid: this.user.userid
         });
         console.log('is_read를 true로', response.data);
+
+        // 메세지를 읽은 후 unreadmessages를 다시 불러와서 아직 읽지 않은 메시지 개수를 최신 데이터로 업데이트하기
+        this.unreadmessages();
       } catch (error) {
         console.error('Error setting is_read:', error.response.data);
       }
