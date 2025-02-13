@@ -334,6 +334,8 @@ def get_message(chat_id):
         print(f"Error fetching messages: {e}")
         return jsonify({'message:' 'Failed to fetch messages'}), 500
 
+
+
 # 대화목록에서 보여줄 마지막 메세지와 대화방에 대한 정보 가져오기
 @app.route('/lastmessage/<user_id>', methods=['GET'])
 def get_last_message(user_id):
@@ -520,3 +522,24 @@ def get_search_user_result(keyword):
     return jsonify([]), 200
 
 
+
+
+
+# 사용자가 읽지 않은 새 메세지들 가져오기
+@socketio.on('get_unread_message')
+def get_unread_message(data):
+    user_id = data.get('user_id')
+    try:
+        # Messages 테이블과 User 테이블 조인
+        messages = db.session.query(Messages).filter(
+            Messages.receiver_id == user_id,  # 해당 user_id가 받은 메세지
+            Messages.is_read == False  # 안 읽은 메세지들만
+        ).all()
+
+        # 메세지를 리스트로 변환해서 JSON 응답
+        result = [msg.to_dict() for msg in messages]
+        socketio.emit('get_unread_message', result)
+    
+    except Exception as e:
+        print(f"Error fetching unread messages")
+        return jsonify({'message:' 'Failed to fetch unread messages'}), 500
