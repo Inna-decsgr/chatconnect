@@ -9,6 +9,7 @@ from flask import send_from_directory
 import os
 from sqlalchemy import case
 from python import socketio
+from flask_socketio import emit
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # 현재 파일이 위치한 디렉토리 가져옴
@@ -424,11 +425,18 @@ def set_is_read_true(chat_id):
             Messages.chat_id == chat_id, # 해당 채팅방
             Messages.receiver_id == current_user_id,  # 현재 사용자가 받은 메시지
             Messages.is_read == False  # 읽지 않은 메시지만
-        ).update({"is_read": True})  # 읽음 처리
+        ).all()  # 리스트 형태로 가져오기
+
+        if not messages:
+            return jsonify({'message': 'No unread messages'}), 200
+        
+        # 모든 메시지들 읽음 처리
+        for msg in messages:
+            msg.is_read = True
 
         db.session.commit() # 변경 사항 저장
 
-        return jsonify({'message': messages}), 200
+        return jsonify({'message': 'Messages marked as read'}), 200
     
     except Exception as e:
         print(f"Error fetching messages: {e}")
@@ -538,6 +546,8 @@ def get_unread_message(data):
 
         # 메세지를 리스트로 변환해서 JSON 응답
         result = [msg.to_dict() for msg in messages]
+        
+        # 클라이언트의 unreadmessages 함수에서 emit("get_unread_message") 요청을 받으면 db에서 조회한 후 socketio.emit을 다시 호출해서 socket.on("get_unread_message")을 등록해둔 곳에 네가 요청한 메시지 개수 여기 있어!라고 보내는 것
         socketio.emit('get_unread_message', result)
     
     except Exception as e:
