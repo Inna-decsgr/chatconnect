@@ -236,13 +236,23 @@ def new_message(data):
         db.session.commit()
 
 
+        # 전체 unread 개수 구하기
         unread_count = Messages.query.filter(
             Messages.receiver_id == receiver_id,
             Messages.is_read == False
         ).count()
-        
-        print(f"받는 사람: {receiver_id}")
-        print(f"몇개: {unread_count}")
+
+        # 채팅방별 unread 개수 구하기
+        unread_by_chat = db.session.query(
+            Messages.chat_id,
+            db.func.count(Messages.chat_id)  # 채팅방별 안 읽은 메시지 개수 세기
+        ).filter(
+            Messages.receiver_id == receiver_id,
+            Messages.is_read == False
+        ).group_by(Messages.chat_id).all()
+
+        # 딕셔너리 형태로 변환
+        unread_by_chat_dict = {chat_id: count for chat_id, count in unread_by_chat}
 
         # receiver 에게 unreadMessages 업데이트 정보 전송
         socketio.emit('update_unread_messages', {
@@ -250,15 +260,17 @@ def new_message(data):
             'unread_count': unread_count
         })
 
-        
-        print(f"🚀 서버에서 모든 클라이언트에게 메시지 전송: {new_message.to_dict()}")
+        socketio.emit('update_unread_by_chat', {
+            'userid': receiver_id,
+            'chatid': chat_id,
+            'unread_by_chat': unread_by_chat_dict  # 채팅방별 unread 개수
+        })
+
         socketio.emit("new_message", new_message.to_dict(), room=chat_id) 
-        print(f"메세지 전송 완료")
     
     except Exception as e:
         print(f"Error adding message: {e}")
         return jsonify({'message': 'Failed to add message'}), 500
-    
 
 
 
@@ -267,8 +279,6 @@ def new_message(data):
 @socketio.on('get_messages')
 def get_message(data):
     chat_id = data.get('chat_id')
-    print(f"📩 채팅 내역 요청: chat_id={chat_id}")
-
     try:
         # Messages와 User 테이블 조인해서 receiver의 profile_image 가져오기
         messages = db.session.query(
@@ -299,10 +309,7 @@ def get_message(data):
             }
             for msg, receiver_profile_image in messages
         ]
-
-        print(f"🚀 서버에서 get_messages emit 실행 중 (chat_id={chat_id})")
         socketio.emit('get_message', result)
-        print(f"get_message 실행 완료")
 
     except Exception as e:
         print(f"🚨 메시지 불러오기 오류: {e}")
