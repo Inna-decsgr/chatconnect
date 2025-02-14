@@ -17,14 +17,12 @@ import socket from "../utils/socket";
 
 
 export default {
-  data() {
-    return {
-      unreadmessageslength: 0
-    }
-  },
   computed: {
     user() {
       return this.$store.getters.getUser;
+    },
+    unreadmessageslength() {
+      return this.$store.getters.getunreadmessages[this.user?.userid] || 0;
     }
   },
   created() {
@@ -59,10 +57,17 @@ export default {
       // 소켓 이벤트 설정 관리
       // 서버의 setisreadtrue 라우트에서 emit("get_unread_message", result)를 하게 되면 socket.on("get_unread_message")이 실행됨. 
       if (!this.user || !this.user.userid) return;
-      socket.off("get_unread_messagte");  // 기존 이벤트 리스너 제거(중복 방지)
-      socket.on("get_unread_message", (messages) => {
-        console.log("실시간 업데이트된 읽지 않은 메시지들:", messages);
-        this.unreadmessageslength = messages.length
+
+      socket.off("get_unread_message");  // 기존 이벤트 리스너 제거(중복 방지)
+      socket.on("get_unread_message", (data) => {
+        console.log("실시간 업데이트된 읽지 않은 메시지들:", data);
+
+        if (data.userid !== this.user.userid) return;  // 현재 로그인한 사용자만 반영
+        
+        this.$store.commit("set_unread_messages", {
+          userid: data.userid,
+          count: data.unread_count
+        });
       })
     }
   }
