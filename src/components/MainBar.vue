@@ -63,11 +63,25 @@ export default {
         console.log("실시간 업데이트된 읽지 않은 메시지들:", data);
 
         if (data.userid !== this.user.userid) return;  // 현재 로그인한 사용자만 반영
-        
+
         this.$store.commit("set_unread_messages", {
           userid: data.userid,
           count: data.unread_count
         });
+      });
+
+      socket.on("update_unread_messages", (data) => {
+        console.log("📩 [Socket] 새 메시지 도착! unread 업데이트:", data);
+        console.log('받는 사람', data.userid , '보내는 사람', this.user.userid);
+
+        if (data.userid == this.user.userid) {
+          this.$store.commit("set_unread_messages", {
+            userid: data.userid,
+            count: data.unread_count
+          })
+        } else {
+          console.log("🚫 [Socket] 내 데이터가 아니므로 무시됨");
+        }
       })
     }
   }
