@@ -18,6 +18,7 @@
 
 <script>
 import { formatDatetime } from '@/utils/formatDate';
+import socket from "../utils/socket";
 import axios from 'axios';
 
 export default {
@@ -34,24 +35,32 @@ export default {
   },
   watch: {
     messages: {
-      immediate: true,  // 변경이 없어도 바로 실행. 컴포넌트 로드 시 한번 실행. 이후 messages 가 변경될 때도 자동으로 반응
       handler(newMessages) {
-        newMessages.forEach((message) => {
-          this.fetchreadcounts(message.chat_id);
-        })
-      }
+        if (!newMessages || newMessages.length === 0) {
+          console.log("messages가 비어 있음! 데이터를 기다려야 함!");
+          return;
+        }
+        for (const message of newMessages) {
+          this.fetchunreadcounts(message.chat_id);
+        }
+      },
+      immediate: true,  // 컴포넌트가 처음 로드될 때도 실행
+      deep: true        // messages 내부 값이 변경될 때도 감지
     }
-  },
+  },  
   computed: {
     user() {
       return this.$store.getters.getUser;
+    },
+    unreadMessagesSafe() {
+      return this.unreadMessages || {};  // undefined일 경우 기본값 `{}` 반환
     }
   },
   async mounted() {
-    // 메시지들의 chat_id를 fetchreadcounts에 전달해서 데이터 가져오도록 요청 보냄.
-    await this.messages.forEach((message) => {
-      this.fetchreadcounts(message.chat_id);
-    });
+    for (const message of this.messages) {  // `for...of`는 `await`를 정상적으로 지원
+      await this.fetchunreadcounts(message.chat_id);  // 비동기 함수 실행
+    }
+    this.fetchreadcounts();
   },
   methods: {
     startchat(user) {
@@ -63,13 +72,25 @@ export default {
     formattedDate(date) {
       return formatDatetime(date)
     },
-    async fetchreadcounts(chatid) {
+    fetchreadcounts() {
+      socket.off("update_unread_by_chat"); 
+      socket.on("update_unread_by_chat", (data) => {
+        // 데이터가 현재 로그인한 사용자 데이터인지 확인
+        if (data.userid == this.user.userid) {
+          this.unreadMessages = { ...this.unreadMessagesSafe, ...data.unread_by_chat };
+
+        } else {
+          console.log("🚫 [Socket] 내 데이터가 아니므로 무시됨");
+        }
+      });
+    },
+    async fetchunreadcounts(chatid) {
       const response = await axios.get(`http://localhost:5000/messages/${chatid}`);
+
       // 조건: receiver_id가 나이고 is_read가 0인 메시지 필터링
       const unreadCount = response.data.reduce((count, m) => {
         return m.receiver_id == this.user.userid && !m.is_read ? count + 1 : count;
       }, 0);
-      console.log(`채팅방 ${chatid}의 읽지 않은 메세지 개수:`, unreadCount);
       this.unreadMessages[chatid] = unreadCount;
     }
   }
