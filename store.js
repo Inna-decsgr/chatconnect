@@ -5,10 +5,12 @@ import createPersistedState from 'vuex-persistedstate';
 const store = createStore({
   state: {
     me: {},
-    user: {},   
-    users: [],  
+    user: {},
+    users: [],
     token: localStorage.getItem('access_token') || null,
-    favorite_users: []
+    favorite_users: [],
+    unreadMessages: {},
+    unreadMessagesByChat: {}
   },
   mutations: {
     SET_USER(state, user) {
@@ -46,6 +48,18 @@ const store = createStore({
     },
     removeFavoriteUser(state, friendid) {
       state.favorite_users = state.favorite_users.filter(user => user.user_id !== friendid);
+    },
+    set_unread_messages(state, { userid, count }) {
+      state.unreadMessages = { ...state.unreadMessages, [userid]: count}
+    },
+    set_specific_unread_message(state, payload) {
+      if (state.unreadMessagesByChat[payload.userid]) {
+        state.unreadMessagesByChat[payload.userid][payload.chatid] = 0;
+      }
+  
+      // Mainbar에도 반영 (전체 unread 개수 다시 계산)
+      let totalUnread = Object.values(state.unreadMessagesByChat[payload.userid] || {}).reduce((sum, count) => sum + count, 0);
+      state.unreadMessages[payload.userid] = totalUnread;
     }
   },
   actions: {
@@ -116,17 +130,21 @@ const store = createStore({
     },
     getFavoriteUsers(state) {
       return state.favorite_users;
+    },
+    getunreadmessages(state) {
+      return state.unreadMessages
     }
   },
   plugins: [  
     createPersistedState({
-      key: 'myApp', 
-      paths: ['user', 'favorite_users'], 
+    // user 상태를 저장하지 않아서 로그인한 상태로 chatlist에서 새로고침을 하면 / 경로로 돌아가는 오류를 막기위해서 createPersistedState를 사용해서 방지
+      key: 'myApp',  // 저장할 키 이름
+      paths: ['user', 'favorite_users'],  // 저장할 상태 경로
     })
   ],
 });
 
-if (store.state.token) {  
+if (store.state.token) {    // 로그인 상태 유지하려고
   store.dispatch('fetchUserData');
 }
 
