@@ -201,7 +201,6 @@ def get_users():
 # 💬 메시지 처리 이벤트
 @socketio.on('message')
 def new_message(data):
-    print(f"Received message: {data}")
 
     try :
         chat_id = data['chat_id']
@@ -236,8 +235,24 @@ def new_message(data):
         db.session.add(new_message)
         db.session.commit()
 
+
+        unread_count = Messages.query.filter(
+            Messages.receiver_id == receiver_id,
+            Messages.is_read == False
+        ).count()
+        
+        print(f"받는 사람: {receiver_id}")
+        print(f"몇개: {unread_count}")
+
+        # receiver 에게 unreadMessages 업데이트 정보 전송
+        socketio.emit('update_unread_messages', {
+            'userid': receiver_id,
+            'unread_count': unread_count
+        })
+
+        
         print(f"🚀 서버에서 모든 클라이언트에게 메시지 전송: {new_message.to_dict()}")
-        socketio.emit("new_message", new_message.to_dict(), to=chat_id) 
+        socketio.emit("new_message", new_message.to_dict(), room=chat_id) 
         print(f"메세지 전송 완료")
     
     except Exception as e:
