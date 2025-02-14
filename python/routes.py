@@ -436,7 +436,14 @@ def set_is_read_true(chat_id):
 
         db.session.commit() # 변경 사항 저장
 
-        return jsonify({'message': 'Messages marked as read'}), 200
+        # 해당 채팅방에 대한 unread count만 업데이트하여 반환
+        unread_count = Messages.query.filter(
+            Messages.receiver_id == current_user_id,
+            Messages.is_read == False
+        ).count()
+
+        # user_id를 같이 반환해서 덮어씌우는 문제 방지
+        return jsonify({'message': 'Messages marked as read', 'userid': current_user_id, 'unread_count': unread_count}), 200
     
     except Exception as e:
         print(f"Error fetching messages: {e}")
@@ -544,11 +551,9 @@ def get_unread_message(data):
             Messages.is_read == False  # 안 읽은 메세지들만
         ).all()
 
-        # 메세지를 리스트로 변환해서 JSON 응답
-        result = [msg.to_dict() for msg in messages]
-        
-        # 클라이언트의 unreadmessages 함수에서 emit("get_unread_message") 요청을 받으면 db에서 조회한 후 socketio.emit을 다시 호출해서 socket.on("get_unread_message")을 등록해둔 곳에 네가 요청한 메시지 개수 여기 있어!라고 보내는 것
-        socketio.emit('get_unread_message', result)
+        unread_count = len(messages)
+
+        socketio.emit('get_unread_message', {'userid': user_id, 'unread_count': unread_count})
     
     except Exception as e:
         print(f"Error fetching unread messages")
