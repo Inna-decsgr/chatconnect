@@ -272,9 +272,16 @@ export default {
           userid: this.user.userid
         });
         console.log('is_read를 true로', response.data);
+        
+        // 특정 채팅방만 업데이트하도록 Vuex 상태 변경
+        this.$store.commit("set_specific_unread_message", {
+          chatid: chatid, 
+          userid: this.user.userid
+        });
 
-        // 메세지를 읽은 후 unreadmessages를 다시 불러와서 아직 읽지 않은 메시지 개수를 최신 데이터로 업데이트하기
+        // ✅ 서버에서 최신 unread 개수 가져오기
         this.unreadmessages();
+
       } catch (error) {
         console.error('Error setting is_read:', error.response.data);
       }
