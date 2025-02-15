@@ -263,6 +263,8 @@ def new_message(data):
         socketio.emit('update_unread_by_chat', {
             'userid': receiver_id,
             'chatid': chat_id,
+            'text': text,
+            'created_at': created_at.isoformat(),  # datetime 객체는 기본적으로 JSON으로 직렬화를 할 수 없음. isoformat() 사용해서 문자열로 변환하기
             'unread_by_chat': unread_by_chat_dict  # 채팅방별 unread 개수
         })
 
