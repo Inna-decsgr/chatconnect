@@ -5,11 +5,15 @@
         <img :src="message.display_user.profile_image ? `http://localhost:5000${message.display_user.profile_image}` : '/images/사용자 프로필.png'" alt="사용자 프로필 이미지" class="w-[50px] h-[50px] object-cover rounded-[20px]">
         <div class="pl-3">
           <p class="font-bold text-sm pb-1">{{ message.display_user.name }}</p>
-          <p class="text-xs text-gray-500">{{ message.text }}</p>
+          <p class="text-xs text-gray-500">
+            {{ newText[message.chat_id] ? newText[message.chat_id] : message.text }}
+          </p>
         </div>
       </div>
       <div class="pb-3">
-        <p class="text-xs text-gray-500 pb-1">{{ formattedDate(message.created_at) }}</p>
+        <p class="text-xs text-gray-500 pb-1">
+          {{ newTime[message.chat_id] ? formattedDate(newTime[message.chat_id]) : formattedDate(message.created_at) }}
+        </p>
         <span v-if="user.user_id !== message.sender_id && unreadMessages[message.chat_id]" class="text-xs bg-red-500 text-white block w-[18px] h-[18px] rounded-full font-bold absolute right-[26px] pt-[1px] text-center">{{ unreadMessages[message.chat_id] || null}}</span>
       </div>
     </div>
@@ -24,7 +28,9 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      unreadMessages: {}
+      unreadMessages: {},
+      newText: [],
+      newTime: []
     }
   },
   props: {
@@ -76,9 +82,11 @@ export default {
       socket.off("update_unread_by_chat"); 
       socket.on("update_unread_by_chat", (data) => {
         // 데이터가 현재 로그인한 사용자 데이터인지 확인
+        console.log('받은 전체 데이터', data)
         if (data.userid == this.user.userid) {
           this.unreadMessages = { ...this.unreadMessagesSafe, ...data.unread_by_chat };
-
+          this.newText[data.chatid] = data.text;
+          this.newTime[data.chatid] = data.created_at;
         } else {
           console.log("🚫 [Socket] 내 데이터가 아니므로 무시됨");
         }
