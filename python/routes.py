@@ -307,6 +307,7 @@ def get_message(data):
         result = [
             {
                 **msg.to_dict(),
+                "message_id": msg.message_id,
                 "receiver_profile_image": receiver_profile_image
             }
             for msg, receiver_profile_image in messages
@@ -431,6 +432,46 @@ def get_last_message(user_id):
         print(f"Error fetching messages: {e}")
         return jsonify({'message:' 'Failed to fetch messages'}), 500
     
+
+
+
+# 특정 채팅방의 메시지 읽어오기
+@socketio.on('set_is_read_true')
+def set_is_read_true(data):
+    chat_id = data.get('chat_id')
+    current_user_id = data.get('userid') 
+    try:
+
+        if not current_user_id:
+            return jsonify({'error': 'User ID is required'}), 400
+        
+        # 해당 채팅방(chat_id)에서 현재 사용자가 받은 메시지(receiver의 메시지)
+        messages = Messages.query.filter(
+            Messages.chat_id == chat_id, # 해당 채팅방
+            Messages.receiver_id == current_user_id,  # 현재 사용자가 받은 메시지
+            Messages.is_read == False  # 읽지 않은 메시지만
+        ).all()  # 리스트 형태로 가져오기
+
+        if not messages:
+            return jsonify({'message': 'No unread messages'}), 200
+        
+
+        updated_messages = []
+        # 모든 메시지들 읽음 처리
+        for msg in messages:
+            msg.is_read = True
+            updated_messages.append({"message_id": msg.message_id, "is_read": msg.is_read})
+
+        db.session.commit() # 변경 사항 저장
+
+        print('읽음 처리 다함 클라이언트로 데이터 전송')
+        socketio.emit("set_is_read_true", {"chat_id": chat_id, "messages": updated_messages}) 
+        print('📢 set_is_read_true 끝!')
+
+    except Exception as e:
+        print(f"Error fetching messages: {e}")
+        return jsonify({'message:' 'Failed to fetch messages'}), 500
+
 
     
 # 해당 채팅방의 sender의 is_read를 모두 true로 설정하기
