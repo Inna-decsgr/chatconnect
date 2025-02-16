@@ -20,7 +20,7 @@
         </button>
       </div>
       <div>
-        <ChatCard :messages="groupedMessages"/>
+        <ChatCard :messages="groupedMessages" @refreshData="getLastMessage"/>
       </div>
     </div>
   </div>
