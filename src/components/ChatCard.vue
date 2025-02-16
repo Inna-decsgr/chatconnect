@@ -75,6 +75,9 @@ export default {
         query: {id: user.id, username: user.name, image:user.image}
       })
     },
+    updateParent() {
+      this.$emit("refreshData"); // 부모의 getLastMessage 호출
+    },
     formattedDate(date) {
       return formatDatetime(date)
     },
@@ -87,6 +90,8 @@ export default {
           this.unreadMessages = { ...this.unreadMessagesSafe, ...data.unread_by_chat };
           this.newText[data.chatid] = data.text;
           this.newTime[data.chatid] = data.created_at;
+
+          this.updateParent();
         } else {
           console.log("🚫 [Socket] 내 데이터가 아니므로 무시됨");
         }
