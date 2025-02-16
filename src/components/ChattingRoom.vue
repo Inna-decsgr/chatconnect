@@ -36,7 +36,7 @@
                     <!-- sender일 때는 info-wrapper가 앞에 오도록 설정 -->
                     <div v-if="msg.sender_id === user.userid" class="flex">
                       <div class="info-wrapper">
-                        <p v-if="msg.sender_id == user.userid && !msg.is_read" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                        <p v-if="msg.sender_id == user.userid && !msg.is_read && !readindicator[msg.message_id]" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
                         <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
                       </div>
                       <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
@@ -74,12 +74,12 @@
 </template>
 
 <script>
-import axios from 'axios'
 import { mapState } from 'vuex'
 import { v4 as uuidv4 } from 'uuid';
 import { chatformatTime } from '@/utils/chatformatTime';
 import ChatTopBar from './ChatTopBar.vue';
 import socket from "../utils/socket";
+import axios from 'axios';
 
 export default {
   components: {
@@ -89,7 +89,8 @@ export default {
     return {
       newMessage: '',
       messages: [],
-      chatId: null
+      chatId: null,
+      readindicator: []
     }
   },
   created() {
@@ -106,13 +107,21 @@ export default {
     // ✅ 서버에서 채팅 내역 수신
     socket.on("get_message", (data) => {
       console.log('채팅 아이디', this.chatId);
-      console.log("📩 서버에서 받은 채팅 내역:", data);
       if (!data || data.length === 0) {
         console.error("❌ 메시지 데이터가 없음!", data);
         return;
       }
       this.messages = [];
       data.forEach(msg => this.addMessageToChat(msg));
+    });
+
+    socket.on("set_is_read_true", (data) => {
+      console.log("📢 읽음 표시 소켓 이벤트 데이터", data);
+
+      // ✅ 받은 데이터를 이용해 현재 메시지의 읽음 상태 업데이트
+      data.messages.forEach((updatedMsg) => {
+        this.readindicator[updatedMsg.message_id] = updatedMsg.is_read
+      });
     });
   },
   updated() {
@@ -194,8 +203,6 @@ export default {
       }
     },
     addMessageToChat(data) {
-      console.log("📩 받은 메시지를 추가 중:", data);
-
       // 날짜 키와 요일 계산
       const daysOfWeek = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
       const dateObj = new Date(data.created_at);
@@ -268,6 +275,9 @@ export default {
       try {
         // this.chatId랑 this.userid
         //  {{ this.chatId }}{{ this.user.userid }}
+        console.log('서버에 읽음 처리 이벤트 요청');
+        socket.emit("set_is_read_true", { chat_id: chatid, userid: this.user.userid })
+
         const response = await axios.post(`http://localhost:5000/setisreadtrue/${chatid}`, {
           userid: this.user.userid
         });
