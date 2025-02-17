@@ -209,6 +209,7 @@ def new_message(data):
         receiver_id = data['receiver_id']
         receiver_name = data['receiver_name']
         text = data['text']
+        isrealtime = data['realtime']
         created_at = datetime.now()
 
         chat = Chats.query.get(chat_id)
@@ -222,6 +223,7 @@ def new_message(data):
             db.session.commit()
             chat_id = new_chat.chat_id  # 생성된 chat_id 사용
 
+
         # 메시지 저장
         new_message = Messages(
             chat_id= chat_id,
@@ -230,7 +232,8 @@ def new_message(data):
             receiver_id= receiver_id,
             receiver_name = receiver_name,
             text= text,
-            created_at= created_at
+            created_at= created_at,
+            is_read = True if isrealtime else False
         )
         db.session.add(new_message)
         db.session.commit()
@@ -623,3 +626,45 @@ def get_unread_message(data):
     except Exception as e:
         print(f"Error fetching unread messages")
         return jsonify({'message:' 'Failed to fetch unread messages'}), 500
+    
+
+
+room_users = {}
+# 실시간 대화할 때 상대방이 채팅방에 들어와있는지 아닌지에 대한 데이터 전송
+@socketio.on('joinRoom')
+def handle_join_room(data):
+
+    print('들어갈 방, 사용자', data)
+    room_id = data.get('roomid')
+    user_id = data.get('userid')
+
+    if room_id not in room_users:
+        room_users[room_id] = set()
+        
+    room_users[room_id].add(user_id)
+
+    #채팅방에 있는 유저 리스트 전달
+    socketio.emit('handle_join_room', list(room_users[room_id]))
+
+
+@socketio.on("leaveRoom")
+def handle_leave_room(data):
+    user_id = data["userid"]
+    print("사용자 {user_id} 방 나가는 중...")
+
+    # 모든 채팅방에서 해당 user_id 제거
+    for room_id in list(room_users.keys()):  # dict 수정 중이라서 list()로 감싸줌
+        if user_id in room_users[room_id]:
+            room_users[room_id].remove(user_id)  # 특정 유저 제거
+
+            # 만약 빙에 남은 사람이 없으면 해당 방 삭제
+            if not room_users[room_id]:
+                del room_users[room_id]
+
+    #업데이트된 유저 정보를 set -> list로 변환
+    room_users_json = {room: list(users) for room, users in room_users.items()}
+    
+    # 업데이트된 유저 정보를 전송
+    socketio.emit('handle_leave_room', room_users_json)
+
+    
