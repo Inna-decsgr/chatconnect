@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-for="message in messages" :key="message.chat_id" class="flex justify-between items-center px-4 py-[12px] mb-[2px] cursor-pointer hover:bg-gray-100" @dblclick="startchat({id:message.display_user.id, name:message.display_user.name, image:message.display_user.profile_image})">
+    <div v-for="message in messages" :key="message.chat_id" class="flex justify-between items-center px-4 py-[12px] mb-[2px] cursor-pointer hover:bg-gray-100" @dblclick="startchat({id:message.display_user.id, name:message.display_user.name, image:message.display_user.profile_image, chatid: message.chat_id})">
       <div class="flex items-center">
         <img :src="message.display_user.profile_image ? `http://localhost:5000${message.display_user.profile_image}` : '/images/사용자 프로필.png'" alt="사용자 프로필 이미지" class="w-[50px] h-[50px] object-cover rounded-[20px]">
         <div class="pl-3">
@@ -72,8 +72,11 @@ export default {
     startchat(user) {
       this.$router.push({
         path: '/mainchat/chatroom',
-        query: {id: user.id, username: user.name, image:user.image}
-      })
+        query: { id: user.id, username: user.name, image: user.image }
+      }),
+      console.log(user.chatid, user.id);
+      console.log('채팅방 들어가는 socket.emit 실행');
+      socket.emit("joinRoom", { roomid: user.chatid, userid: user.id });
     },
     updateParent() {
       this.$emit("refreshData"); // 부모의 getLastMessage 호출
