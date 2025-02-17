@@ -148,18 +148,30 @@ export default {
     });
 
     socket.on('handle_join_room', (data) => {
-      console.log('사용자 채팅방에 들어옴', data, this.user.userid);
-      // data를 list 로 전달받았는데 room_users에 str(문자열) 데이터로 숫자가 들어가있어서 includes 가 안먹힘. 그래서 따로 Number로 변환해서 비교함
-      if (data.map(Number).includes(Number(this.friendId))) {
-        console.log('상대방이 채팅방에 들어와있음');
-        // Set 해서 중복 제거
-        this.userinroom = [...new Set([...this.userinroom, ...data])];
-        if (this.userinroom.includes(Number(this.friendId)) && this.userinroom.includes(Number(this.user.userid))) {
-          this.isrealtime = true
-          console.log('실시간 채팅중?', this.isrealtime);
-        } else {
-          this.isrealtime = false;
-        }
+      console.log("받은 데이터:", data);
+
+      // 받은 데이터에서 채팅방 ID 가져오기
+      const key = Object.keys(data)[0];
+      const userList = data[key] || [];
+
+      // this.userinroom이 객체가 아닐 경우 초기화
+      if (!this.userinroom) {
+        this.userinroom = {};
+      }
+
+      // 현재 채팅방(`key`)에 기존 데이터 유지하면서 새로운 사용자 추가 (중복 제거)
+      this.userinroom[key] = [...new Set([...(this.userinroom[key] || []), ...userList])];
+      console.log("현재 채팅방 사용자 목록:", this.userinroom);
+
+      // 실시간 채팅 여부 확인
+      if (
+        this.userinroom[key].includes(Number(this.friendId)) &&
+        this.userinroom[key].includes(Number(this.user.userid))
+      ) {
+        this.isrealtime = true;
+        console.log("실시간 채팅중?", this.isrealtime);
+      } else {
+        this.isrealtime = false;
       }
     });
 
