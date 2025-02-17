@@ -180,7 +180,6 @@ export default {
   methods: {
     gotoMyProfile() {
       this.isShowSetting = true;
-      console.log(this.isShowSetting);
     },
     close() {
       this.isShowSetting = false;
@@ -196,7 +195,6 @@ export default {
         reader.onload = (e) => {
           this.previewImage = e.target.result; // 이미지 미리보기 URL 생성
         };
-        console.log('사진', this.uploadedImage);
         reader.readAsDataURL(file);
       }
     },
@@ -210,7 +208,6 @@ export default {
       }
 
       const response = await axios.post(`http://localhost:5000/updateprofile/${this.user.userid}`, formData);
-      console.log('요청 결과', response.data);
 
       // 업데이트 된 데이터를 다시 가져와서 vuex 상태 업데이트하기
       this.$store.dispatch('fetchUserData');
