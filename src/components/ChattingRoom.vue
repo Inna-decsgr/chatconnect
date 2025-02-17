@@ -36,11 +36,16 @@
                     <!-- sender일 때는 info-wrapper가 앞에 오도록 설정 -->
                     <div v-if="msg.sender_id === user.userid" class="flex">
                       <div class="info-wrapper">
-                        <p v-if="msg.sender_id == user.userid && !msg.is_read && !readindicator[msg.message_id]" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                        <p 
+                          v-if="msg.sender_id == user.userid && 
+                          !msg.is_read && 
+                          !readindicator[msg.message_id] &&
+                          !isrealtime" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
                         <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
                       </div>
                       <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
                     </div>
+                    {{ this.userinroom }}
                   </div>
                 </div>
               </div>
@@ -90,11 +95,30 @@ export default {
       newMessage: '',
       messages: [],
       chatId: null,
-      readindicator: []
+      readindicator: [],  // 각 메세지의 읽음 상태를 저장. {메세지 아이디: true or false}
+      userinroom: [],  // 채팅방에 들어와있는 사용자들 아이디
+      isrealtime: null  // 지금 실시간으로 대화중인지 아닌지
     }
   },
   created() {
     this.loadUserandMessages();
+  },
+  props: { 
+    friendId: {
+      type: String,
+      required: true
+    },
+    friendName: {
+      type: String,
+      required: true
+    },
+    friendImage: {
+      type: String,
+      required: false
+    }
+  },
+  computed: {
+    ...mapState(['user'])
   },
   mounted() {
     console.log("🚀 Vue에서 `socket.on(load_messages)` 리스너 설정 중...");
@@ -123,26 +147,30 @@ export default {
         this.readindicator[updatedMsg.message_id] = updatedMsg.is_read
       });
     });
+
+    socket.on('handle_join_room', (data) => {
+      console.log('사용자 채팅방에 들어옴', data, this.user.userid);
+      // data를 list 로 전달받았는데 room_users에 str(문자열) 데이터로 숫자가 들어가있어서 includes 가 안먹힘. 그래서 따로 Number로 변환해서 비교함
+      if (data.map(Number).includes(Number(this.friendId))) {
+        console.log('상대방이 채팅방에 들어와있음');
+        // Set 해서 중복 제거
+        this.userinroom = [...new Set([...this.userinroom, ...data])];
+        if (this.userinroom.includes(Number(this.friendId)) && this.userinroom.includes(Number(this.user.userid))) {
+          this.isrealtime = true
+          console.log('실시간 채팅중?', this.isrealtime);
+        } else {
+          this.isrealtime = false;
+        }
+      }
+    });
+
+    socket.on('handle_leave_room', (data) => {
+      console.log('채팅방 나간 후', data);
+      this.isrealtime = false
+    })
   },
   updated() {
     this.scrollToBottom();
-  },
-  computed: {
-    ...mapState(['user'])
-  },
-  props: { 
-    friendId: {
-      type: String,
-      required: true
-    },
-    friendName: {
-      type: String,
-      required: true
-    },
-    friendImage: {
-      type: String,
-      required: false
-    }
   },
   methods: {
     async loadUserandMessages() {
@@ -187,7 +215,8 @@ export default {
           receiver_id: this.friendId,
           receiver_name: this.friendName,
           text: this.newMessage,
-          created_at: timestamp
+          created_at: timestamp,
+          realtime: this.isrealtime
         };
 
         console.log('보낼 메세지', message);
