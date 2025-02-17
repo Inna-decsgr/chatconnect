@@ -45,7 +45,6 @@
                       </div>
                       <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
                     </div>
-                    {{ this.userinroom }}
                   </div>
                 </div>
               </div>
