@@ -644,7 +644,7 @@ def handle_join_room(data):
     room_users[room_id].add(user_id)
 
     #채팅방에 있는 유저 리스트 전달
-    socketio.emit('handle_join_room', list(room_users[room_id]))
+    socketio.emit('handle_join_room', {room: list(users) for room, users in room_users.items()})
 
 
 @socketio.on("leaveRoom")
