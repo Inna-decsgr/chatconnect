@@ -44,9 +44,11 @@ export default {
   methods: {
     gotoHome() {
       this.$router.push('/mainchat')
+      socket.emit('leaveRoom', {userid:this.user.userid})
     },
     gotoChattingList() {
       this.$router.push('/chattinglist')
+      socket.emit('leaveRoom', {userid:this.user.userid})
     },
     async unreadmessages() {
       if (!this.user || !this.user.userid) return;
