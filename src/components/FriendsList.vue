@@ -36,7 +36,7 @@ export default {
     startchat(user) {
       this.$router.push({
         path: '/mainchat/chatroom',
-        query: {id: user.user_id, username: user.username}
+        query: {id: user.user_id, username: user.username, image:user.profile_image}
       })
     }
   }
