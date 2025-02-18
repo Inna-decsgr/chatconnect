@@ -154,14 +154,20 @@ export default {
       const key = Object.keys(data)[0];
       const userList = data[key] || [];
 
-      // this.userinroom이 객체가 아닐 경우 초기화
       if (!this.userinroom) {
         this.userinroom = {};
       }
+      // this.userinroom이 객체가 아닐 경우 초기화
+      if (!this.userinroom[key]) {
+        this.userinroom[key] = [];
+      }
 
-      // 현재 채팅방(`key`)에 기존 데이터 유지하면서 새로운 사용자 추가 (중복 제거)
-      this.userinroom[key] = [...new Set([...(this.userinroom[key] || []), ...userList])];
-      console.log("현재 채팅방 사용자 목록:", this.userinroom);
+      // 기존 목록 유지하면서 새로운 사용자 추가(중복 제거)
+      const currentUsers = new Set(this.userinroom[key]);  // 기존 사용자 목록
+      userList.forEach(user => currentUsers.add(user));  // 새로운 사용자 추가
+
+      this.userinroom[key] = [...currentUsers];  // Set을 다시 배열로 변환
+      console.log("현재 채팅방 사용자 목록:", this.userinroom[key]);
 
       // 실시간 채팅 여부 확인
       if (
@@ -177,6 +183,19 @@ export default {
 
     socket.on('handle_leave_room', (data) => {
       console.log('채팅방 나간 후', data);
+
+      const key = Object.keys(data)[0];
+      const userList = data[key] || [];
+      
+      if (this.userinroom[key]) {
+        // 나간 사람 해당 채팅방에서 삭제
+        this.userinroom[key] = this.userinroom[key].filter(id => id !== userList);
+        
+        // 만약 방에 아무도 없으면 해당 키 삭제
+        if (this.userinroom[key].length === 0) {
+          delete this.userinroom[key];
+        }
+      }
       this.isrealtime = false
     })
   },
