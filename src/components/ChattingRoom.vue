@@ -11,7 +11,7 @@
           {{group.date}} {{ group.day }}
         </p>
         <!--날짜별로 메시지 반복-->
-        <div v-for="minuteGroup in group.groupedMinutes" :key="minuteGroup.minute" class="mb-2">
+        <div v-for="(minuteGroup, minuteIndex) in group.groupedMinutes" :key="minuteIndex" class="mb-2">
         <!--쉽게 생각하면 receiver_id, 수신자가 7이고 보내는 사람이 8이라고 치자. 그럼 sender_id와 user.userid는
         8로 같을수밖에 없잖아. 현재 로그인된 사용자가 메시지를 보낼테니까. 근데 우리가 채팅방을 만들때 같은 방을 
         공유하게 만들어뒀으니까 7이 sender가 될수도 receiver가 될수도 있고 8이 sender가 될수도 receiver가 될 수도 있잖아 그치?
@@ -21,29 +21,53 @@
         가 같은 것만 골라서 왼쪽정렬하면 v-else했을때 반대의 경우가 다 오른쪽 정렬되니까 그런거라고 생각해.
         미래의 나야...과거의 내가 멍청해서 미안 허허허 내가 고쳤어! 현재 사용자와 sender_id가 
         같지 않으면 수신자라는 거니까 msg.receiver_id === user.userid에서 아래와 같이 바꿈!ㅎㅎ-->
-          <div v-for="(msg, index) in minuteGroup" :key="index" class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
-            <div class="message-container">
-              <div class="flex">
-                <img v-if="msg.sender_id !== user.userid && index === 0" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
-                <div class="pl-3">
-                  <p class="text-[12px] mb-[3px]" v-if="msg.sender_id !== user.userid && index === 0">{{ msg.sender_name }}</p>
-                  <div class="flex">
-                    <!-- receiver일 때는 text가 먼저오도록 -->
-                    <div v-if="msg.sender_id !== user.userid" class="flex">
-                      <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '', index !== 0 ? 'ml-[39px]' : '']">{{ msg.text }}</p>
-                      <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
-                    </div>
-                    <!-- sender일 때는 info-wrapper가 앞에 오도록 설정 -->
-                    <div v-if="msg.sender_id === user.userid" class="flex">
-                      <div class="info-wrapper">
-                        <p 
-                          v-if="msg.sender_id == user.userid && 
-                          !msg.is_read && 
-                          !readindicator[msg.message_id] &&
-                          !isrealtime" class="unread-indicator" :class="index !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
-                        <p v-if="index === minuteGroup.length - 1" class="time">{{ msg.created_at }}</p>
+          <!-- 시간순으로 정렬된 메시지를 표시 -->
+          <div v-for="(msg, msgIndex) in minuteGroup" :key="msgIndex">
+            <div class="message-wrapper" :class="msg.sender_id === user.userid ? 'sender-wrapper' : 'receiver-wrapper'">
+              <div class="message-container">
+                <div class="flex">
+                  <!-- ✅ 첫 번째 메시지에만 프로필 이미지 표시 -->
+                  <img v-if="isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) && msg.sender_id !== user.userid" :src="msg.receiver_profile_image ? `http://localhost:5000${msg.receiver_profile_image}` : '/images/사용자 프로필.png'" class="w-[40px] h-[40px] object-cover rounded-[16px]">
+                  <div class="pl-3">
+                  <!-- ✅ 첫 번째 메시지에만 사용자 이름 표시 -->
+                    <p class="text-[12px] mb-[3px]" v-if="isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) && msg.sender_id !== user.userid">
+                      {{ msg.sender_name }}
+                    </p>
+                    <div class="flex">
+            
+                      <!-- ✅ 수신자(receiver)일 경우 -->
+                      <div v-if="msg.sender_id !== user.userid" class="flex">
+                        <div>
+                          <p :class="['message', 'receiver', msgIndex === 0 ? 'has-tail' : '', !isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) ? 'ml-[39px]' : '']">
+                            {{ msg.text }}
+                          </p>
+                        </div>
+                        <!-- ✅ 마지막 메시지일 경우 시간 표시 -->
+                        <p v-if="isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup)" class="time">
+                          {{ msg.created_at }}
+                        </p>
                       </div>
-                      <p :class="['message', msg.sender_id === user.userid ? 'sender' : 'receiver', index === 0 ? 'has-tail' : '']">{{ msg.text }}</p>
+
+                      <!-- ✅ 발신자(sender)일 경우 -->
+                      <div v-if="msg.sender_id === user.userid" class="flex">
+                        <div class="info-wrapper">
+                          <p v-if=" !msg.is_read && 
+                            !readindicator[msg.message_id] &&
+                            !isrealtime" 
+                            class="unread-indicator"
+                            :class="msgIndex !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                          <!-- ✅ 마지막 메시지에만 시간 표시 -->
+                          <p v-if="isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup)" class="time">
+                            {{ msg.created_at }}
+                          </p>
+                        </div>
+                        <div>
+                          <p :class="['message', 'sender', msgIndex === 0 ? 'has-tail' : '']">
+                            {{ msg.text }}
+                          </p>
+                        </div>
+                        {{ this.userinroom[msg.chat_id] }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -120,7 +144,6 @@ export default {
     ...mapState(['user'])
   },
   mounted() {
-    console.log("🚀 Vue에서 `socket.on(load_messages)` 리스너 설정 중...");
     socket.on("new_message", (data) => {
       console.log("📩 서버에서 받은 실시간 메시지:", data);
       console.log("🚀 새 메시지가 감지됨! `get_messages` 실행");
@@ -130,6 +153,7 @@ export default {
     // ✅ 서버에서 채팅 내역 수신
     socket.on("get_message", (data) => {
       console.log('채팅 아이디', this.chatId);
+      console.log('메세지들222222', data);
       if (!data || data.length === 0) {
         console.error("❌ 메시지 데이터가 없음!", data);
         return;
@@ -282,6 +306,7 @@ export default {
         created_at: chatformatTime(data.created_at)
       };
       
+      const senderId = formattedMessage.sender_id;
       // 기존 그룹에서 메시지를 추가할 해당 날짜 키를 찾음
       const groupIndex = this.messages.findIndex(group => group.date === dateKey);
 
@@ -291,22 +316,61 @@ export default {
 
         if (!groupedMinutes[minuteKey]) {
           // 해당 날짜는 있는데 해당 시간이 없을 경우 새로 생성
-          groupedMinutes[minuteKey] = [];
+          groupedMinutes[minuteKey] = {};
         }
 
-        // 있으면
-        groupedMinutes[minuteKey].push(formattedMessage);
+        // 해당 sender_id 그룹이 없으면 새로 생성
+        if (!groupedMinutes[minuteKey][senderId]) {
+          groupedMinutes[minuteKey][senderId] = [];
+        }
+
+        // 해당 sender_id 그룹에 메시지 추가
+        groupedMinutes[minuteKey][senderId].push(formattedMessage);
       } else {
         // 해당 날짜 그룹이 없으면 새 그룹을 생성 후 메세지 추가
         this.messages.push({
           date: dateKey,
           day: dayOfWeek,
           groupedMinutes: {
-            [minuteKey]: [formattedMessage]
+            [minuteKey]: {
+              [senderId]: [formattedMessage]
+            }
           }
         });
       }
+
+      // 추가된 메세지를 시간순으로 정렬
+      this.sortMessages();
       this.$nextTick(() => this.scrollToBottom());  // 스크롤 자동 이동
+    },
+    sortMessages() {
+      // 시간 -> 아이디별로 그룹되어있는 메세지들을 다시 하나로 합쳐서 시간순서대로 정렬
+      // 이렇게 안하면 각자 아이디밑에 추가되기 때문에 대화가 안되고 거의 독백이 됨ㅠ
+      this.messages.forEach(group => {
+        group.groupedMinutes = Object.fromEntries(
+          Object.entries(group.groupedMinutes).map(([minuteKey, senderGroups]) => [
+            minuteKey,
+            Object.values(senderGroups)  // sender_id 별 메시지 배열들 가져오기
+              .flat() // 하나의 배열로 합치기
+              .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))  // 시간순 정렬
+          ])
+        )
+      })
+    },
+    isFirstAfterReply(msgGroup, msgIndex, minuteGroup) {
+      // msgGroup 내에서 첫번째 메시지이거나, 중간에 상대방이 답장을 해서 시간은 안지났지만 다시 보여줘야할 때는 true 반환
+      if (msgIndex === 0) return true; // 원래 첫 번째 메시지는 무조건 표시
+
+      const prevMsg = minuteGroup[msgIndex - 1]; // 이전 메시지
+      return prevMsg && prevMsg.sender_id !== msgGroup[msgIndex].sender_id;
+    },
+    isLastMessageInSenderGroup(msgGroup, msgIndex, minuteGroup) {
+      // msgGroup에서 마지막 메세지이거나 다음 메시지가 다른 sender라면 true 반환
+      // 시간이 마지막 메세지에만 표시되도록 해뒀는데 상대방이 같은 시간 안에 답장함녀 그 메세지가 마지막이 되면서 시간을 뺏어감ㅠ
+      if (msgIndex === msgGroup.length - 1) return true; // 그룹 내 마지막 메시지는 무조건 true
+
+        const nextMsg = minuteGroup[msgIndex + 1]; // 다음 메시지
+        return !nextMsg || nextMsg.sender_id !== msgGroup[msgIndex].sender_id;
     },
     updateMessageInChat(data) {
       console.log("📩 서버에서 받은 메시지를 기존 메시지와 비교하여 업데이트:", data);
@@ -322,7 +386,6 @@ export default {
           }
         }
       }
-      
       this.addMessageToChat(data);
     },
     async unreadmessages() {
@@ -430,10 +493,11 @@ export default {
 }
 .sender-wrapper .time {
   color: #555555;
-  flex-shrink: 0;
+  font-size: 11px;
+  width: 120px;
   position: absolute;
   bottom: 5px;
-  font-size: 11px;
+  right: 100px;
 }
 
 
@@ -443,7 +507,7 @@ export default {
   color: #f7e330;
   text-align: right;
   padding-right: 3px;
-  margin-bottom: -2px;
+  background: red;
 }
 
 
