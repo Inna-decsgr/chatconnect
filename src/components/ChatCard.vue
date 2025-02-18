@@ -76,7 +76,7 @@ export default {
       }),
       console.log(user.chatid, user.id);
       console.log('채팅방 들어가는 socket.emit 실행');
-      socket.emit("joinRoom", { roomid: user.chatid, userid: user.id });
+      socket.emit("joinRoom", { roomid: user.chatid, userid: this.user.userid });
     },
     updateParent() {
       this.$emit("refreshData"); // 부모의 getLastMessage 호출
