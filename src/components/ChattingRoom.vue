@@ -38,7 +38,7 @@
                       <!-- ✅ 수신자(receiver)일 경우 -->
                       <div v-if="msg.sender_id !== user.userid" class="flex">
                         <div>
-                          <p :class="['message', 'receiver', msgIndex === 0 ? 'has-tail' : '', !isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) ? 'ml-[39px]' : '']">
+                          <p :class="['message', 'receiver', isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) ? 'has-tail' : '', !isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) ? 'ml-[39px]' : '']">
                             {{ msg.text }}
                           </p>
                         </div>
@@ -49,20 +49,20 @@
                       </div>
 
                       <!-- ✅ 발신자(sender)일 경우 -->
-                      <div v-if="msg.sender_id === user.userid" class="flex items-center">
-                        <div class="info-wrapper" :class="{'abc' : isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup) && !msg.is_read }">
+                      <div v-if="msg.sender_id === user.userid" class="flex">
+                        <div class="info-wrapper" :class="[isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup) && !msg.is_read ? 'lastunread' : 'middletext']">
                           <p v-if=" !msg.is_read && 
                             !readindicator[msg.message_id] &&
                             !isrealtime" 
-                            class="unread-indicator"
-                            :class="msgIndex !== minuteGroup.length - 1 ? 'mt-[14px]' : 'mt-[2px]'">1</p>
+                            class="unread-indicator mt-1"
+                            >1</p>
                           <!-- ✅ 마지막 메시지에만 시간 표시 -->
-                          <p v-if="isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup)" class="time">
+                          <p v-if="isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup)" class="time mt-[12px]">
                             {{ msg.created_at }}
                           </p>
                         </div>
-                        <div>
-                          <p :class="['message', 'sender', msgIndex === 0 ? 'has-tail' : '']">
+                        <div class="sender-text">
+                          <p :class="['message', 'sender', isFirstAfterReply(minuteGroup, msgIndex, minuteGroup) ? 'has-tail' : '']">
                             {{ msg.text }}
                           </p>
                         </div>
@@ -483,34 +483,45 @@ export default {
   align-items: flex-end;
   gap: 1px;
   margin-top: 2px;
-  padding-right: 2px;
+  padding-right: 4px;
 }
+
+
 
 .receiver-wrapper .time {
   color: #555555;
-  font-size: 11px;
+  font-size: 10px;
   padding-top: 14px;
 }
 .sender-wrapper .time {
   color: #555555;
-  font-size: 11px;
+  font-size: 10px;
   width: 50px;
-  margin-top: 12px;
-}
 
+  text-align: right;
+
+}
 
 /* 읽지 않은 메시지 (1)를 시간 위에 작은 크기로 표시 */
 .sender-wrapper .unread-indicator {
-  font-size: 11px;
+  font-size: 10px;
   color: #f7e330;
   text-align: center;
-  padding-right: 3px;
-
+  padding-top: 2px;
+}
+.sender-text {
+  position: relative;
 }
 
-.abc .time {
-  margin-top: -5px;
+
+
+.lastunread .unread-indicator {
+  position: absolute;
+  top: -4px;
+  margin-bottom: 5px;
 }
+
+
 
 
 .sender.has-tail::after,
