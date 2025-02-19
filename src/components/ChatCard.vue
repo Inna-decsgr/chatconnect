@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-for="message in messages" :key="message.chat_id" class="flex justify-between items-center px-4 py-[12px] mb-[2px] cursor-pointer hover:bg-gray-100" @dblclick="startchat({id:message.display_user.id, name:message.display_user.name, image:message.display_user.profile_image, chatid: message.chat_id})">
-      <div class="flex items-center">
+      <div class="flex items-center px-2">
         <img :src="message.display_user.profile_image ? `http://localhost:5000${message.display_user.profile_image}` : '/images/사용자 프로필.png'" alt="사용자 프로필 이미지" class="w-[50px] h-[50px] object-cover rounded-[20px]">
         <div class="pl-3">
           <p class="font-bold text-sm pb-1">{{ message.display_user.name }}</p>
@@ -10,11 +10,11 @@
           </p>
         </div>
       </div>
-      <div class="pb-3">
-        <p class="text-xs text-gray-500 pb-1">
+      <div class="pb-3 text-center w-[60px]">
+        <p class="text-xs text-gray-500 pb-1 ">
           {{ newTime[message.chat_id] ? formattedDate(newTime[message.chat_id]) : formattedDate(message.created_at) }}
         </p>
-        <span v-if="user.user_id !== message.sender_id && unreadMessages[message.chat_id]" class="text-xs bg-red-500 text-white block w-[18px] h-[18px] rounded-full font-bold absolute right-[26px] pt-[1px] text-center">{{ unreadMessages[message.chat_id] || null}}</span>
+        <span v-if="user.user_id !== message.sender_id && unreadMessages[message.chat_id]" class="text-xs bg-red-500 text-white block w-[18px] h-[18px] rounded-full font-bold absolute right-[37px] pt-[1px] text-center">{{ unreadMessages[message.chat_id] || null}}</span>
       </div>
     </div>
   </div>
