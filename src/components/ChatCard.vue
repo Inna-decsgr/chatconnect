@@ -14,7 +14,7 @@
         <p class="text-xs text-gray-500 pb-1 ">
           {{ newTime[message.chat_id] ? formattedDate(newTime[message.chat_id]) : formattedDate(message.created_at) }}
         </p>
-        <span v-if="user.user_id !== message.sender_id && unreadMessages[message.chat_id]" class="text-xs bg-red-500 text-white block w-[18px] h-[18px] rounded-full font-bold absolute right-[37px] pt-[1px] text-center">{{ unreadMessages[message.chat_id] || null}}</span>
+        <span v-if="user.user_id !== message.sender_id && unreadMessages[message.chat_id]" class="text-xs bg-red-500 text-white block w-[18px] h-[18px] rounded-full font-bold absolute right-[25px] pt-[1px] text-center">{{ unreadMessages[message.chat_id] || null}}</span>
       </div>
     </div>
   </div>

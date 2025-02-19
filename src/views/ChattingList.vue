@@ -11,11 +11,11 @@
         <input 
           type="text"
           v-model="searchkeyword"
-          class="py-2 px-3 rounded-2xl bg-[#efefef] text-sm w-[96%]"
+          class="py-2 px-3 rounded-2xl bg-[#efefef] text-sm w-[88%]"
           placeholder="채팅방, 참여자 검색"
           @keyup.enter="getSearchResult"
         >
-        <button class="w-[4%] pr-3" @click="close">
+        <button class="w-[12%] pr-3" @click="close">
           <i class="fa-solid fa-x text-sm text-gray-500 pl-3 cursor-pointer"></i>
         </button>
       </div>
