@@ -49,8 +49,8 @@
                       </div>
 
                       <!-- ✅ 발신자(sender)일 경우 -->
-                      <div v-if="msg.sender_id === user.userid" class="flex">
-                        <div class="info-wrapper">
+                      <div v-if="msg.sender_id === user.userid" class="flex items-center">
+                        <div class="info-wrapper" :class="{'abc' : isLastMessageInSenderGroup(minuteGroup, msgIndex, minuteGroup) && !msg.is_read }">
                           <p v-if=" !msg.is_read && 
                             !readindicator[msg.message_id] &&
                             !isrealtime" 
@@ -66,7 +66,6 @@
                             {{ msg.text }}
                           </p>
                         </div>
-                        {{ this.userinroom[msg.chat_id] }}
                       </div>
                     </div>
                   </div>
@@ -437,11 +436,6 @@ export default {
   padding: 10px;
 }
 
-.message-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
 .sender-wrapper {
   display: flex;
   flex-direction: column;
@@ -469,6 +463,8 @@ export default {
   padding: 6px 10px;
   font-size: 12px;
   position: relative;
+  word-break: break-word;
+  text-align: left;
 }
 
 
@@ -482,8 +478,12 @@ export default {
 }
 
 .info-wrapper {
-  width: 50px;
-  margin-right: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  margin-top: 2px;
+  padding-right: 2px;
 }
 
 .receiver-wrapper .time {
@@ -494,10 +494,8 @@ export default {
 .sender-wrapper .time {
   color: #555555;
   font-size: 11px;
-  width: 120px;
-  position: absolute;
-  bottom: 5px;
-  right: 100px;
+  width: 50px;
+  margin-top: 12px;
 }
 
 
@@ -505,9 +503,13 @@ export default {
 .sender-wrapper .unread-indicator {
   font-size: 11px;
   color: #f7e330;
-  text-align: right;
+  text-align: center;
   padding-right: 3px;
-  background: red;
+
+}
+
+.abc .time {
+  margin-top: -5px;
 }
 
 
