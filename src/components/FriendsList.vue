@@ -12,6 +12,9 @@
 <script>
 import { mapState } from 'vuex'
 import UserCard from '../components/UserCard.vue'
+import { v4 as uuidv4 } from 'uuid';
+import socket from "../utils/socket";
+
 
 export default {
   components: {
@@ -34,11 +37,24 @@ export default {
   },
   methods: {
     startchat(user) {
+      const chatid = this.getChatId({ myid: this.user.userid, friendid: user.user_id });
       this.$router.push({
         path: '/mainchat/chatroom',
         query: {id: user.user_id, username: user.username, image:user.profile_image}
       })
-    }
+      socket.emit("joinRoom", { roomid: chatid, userid: this.user.userid });
+    },
+    getChatId(data) {
+      const ids = [data.myid, data.friendid].sort();
+      const chatKey = `chatId_${ids.join('_')}`;  
+      let chatId = localStorage.getItem(chatKey); 
+
+      if (!chatId) {  
+        chatId = uuidv4();   
+        localStorage.setItem(chatKey, chatId); 
+      }
+      return chatId;
+    },
   }
 }
 </script>
