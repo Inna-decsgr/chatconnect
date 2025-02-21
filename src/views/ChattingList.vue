@@ -56,7 +56,6 @@ export default {
     async getLastMessage() {
       try {
         const response = await axios.get(`http://localhost:5000/lastmessage/${this.user.userid}`);
-        
         this.groupedMessages = Object.values(
           response.data.reduce((acc, message) => {
             const chatId = message.chat_id;
@@ -89,12 +88,9 @@ export default {
       this.getLastMessage();
     },
     async getSearchResult() {
-      console.log('검색 키워드', this.searchkeyword);
       const response = await axios.get(`http://localhost:5000/searchuser/${this.searchkeyword}`);
-      console.log('검색 키워드를 포함하는 모든 사용자들', response.data);
       // 검색 결과가 없는 경우 빈 배열 처리
       if (response.data.length === 0) {
-        console.log("검색 결과 없음");
         this.groupedMessages = [];
         return;
       }
@@ -106,12 +102,14 @@ export default {
           params: {id: user.id}
         }).then(res => res.data)
       )
-
       if (this.searchresult) {
         // 모든 요청의 결과를 Promise.all로 처리
         Promise.all(this.searchresult).then((response) => {
           // 각 Promise 결과의 [0]을 가져와 display_user를 설정
           this.groupedMessages = response.map((message) => {
+            if (!message || message.length === 0) {
+              return null;
+            }
             const lastmessage = message[0];  // 각 Promise의 첫 번째 메세지 저장
 
             return {
@@ -122,8 +120,8 @@ export default {
                 profile_image: lastmessage.profile_image
               }
             }
-          });
-
+          })
+            .filter(msg => msg !== null);
           console.log('최종 검색 결과', this.groupedMessages);
         });
       } else {
